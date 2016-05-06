@@ -1,0 +1,8 @@
+*~
+*.Rhistory
+figure
+cache
+*.md
+*.pdf
+*.html
+*.bat

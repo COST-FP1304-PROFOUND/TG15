@@ -12,7 +12,6 @@ output:
 ---
 
 ```{r, include=FALSE}
-knitr::opts_chunk$set( echo=FALSE, results="asis", warning=FALSE, message=FALSE )
 library(BayesianTools)
 ```
 
@@ -26,7 +25,6 @@ plotTimeSeriesResults <- function(x, model, observed, error = NULL, plotResidual
   pred <- getPredictiveIntervals(parMatrix = parMatrix, model = model, thin = 1000, quantiles = c(0.025, 0.5, 0.975), error = error)
   
   plotTimeSeries(observed = observed, predicted = pred[2,], confidenceBand = pred[c(1,3),])
-  return(pred[2,])
 }
 ```
 
@@ -42,13 +40,14 @@ rownames(refPars)[12] <- "error-sd"
 referenceData         <- VSEM(refPars$best[1:11], PAR) 
 obs                   <- referenceData + rnorm(length(referenceData), sd = (abs(referenceData) + 1E-7) * refPars$best[12])
 ```
+
 # Perfect model balanced perfect data 
 ## Likelihood 
 ```{r}
-newPars <- refPars
+newPars <- refPars$best
 parSel = c(1:6, 12)
 likelihood <- function(x, sum = TRUE){
-  x         <- createMixWithDefaults(x, refPars$best, parSel)
+  x         <- createMixWithDefaults(x, newPars, parSel)
   predicted <- VSEM(x[1:11], PAR)
   diff      <- c(predicted[,1:3] - obs[,1:3])
   llValues  <- dnorm(diff, sd = (abs(c(predicted[,1:3])) + 0.0000001) * x[12], log = T) 
@@ -60,16 +59,14 @@ likelihood <- function(x, sum = TRUE){
 ```{r}
 prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
 ```
-
 ## Run MCMC
-```{r}
+```{r results = "hide", cache=TRUE}
 bayesianSetup <- createBayesianSetup(likelihood, prior, best = newPars[parSel], names = rownames(refPars)[parSel])
 settings = list(iterations = 100000, adapt = F, optimize = F, proposalScaling = 1)
 out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "Metropolis", settings = settings)
 ```
-
 ## Plot results
-```{r fig.height=4, fig.cap="Output from perfect model after calibration"}
+```{r fig.height=7, fig.cap="Output from perfect model after calibration"}
 runModel1 <- function(par){
   x = createMixWithDefaults(par, newPars, parSel)
   predicted <- VSEM(x[1:11], PAR)
@@ -92,14 +89,15 @@ plotTimeSeriesResults(x = out, model = runModel1, observed = obs[,1], error = er
 plotTimeSeriesResults(x = out, model = runModel2, observed = obs[,2], error = errorFunction)
 plotTimeSeriesResults(x = out, model = runModel3, observed = obs[,3], error = errorFunction)
 ```
+
 # Perfect model unbalanced perfect data 
 ## Likelihood 
 ```{r}
-newPars <- refPars
+newPars <- refPars$best
 parSel = c(1:6, 12)
 obsSel <- c(1,202,390,550,750,920)
 likelihood <- function(x, sum = TRUE){
-  x         <- createMixWithDefaults(x, refPars$best, parSel)
+  x         <- createMixWithDefaults(x, newPars, parSel)
   predicted <- VSEM(x[1:11], PAR)
   diff       <- c(predicted[,c(1,3)] - obs[,c(1,3)])
   llValues1  <- dnorm(diff, sd = (abs(c(predicted[,c(1,3)])) + 0.0000001) * x[12], log = T) 
@@ -117,30 +115,29 @@ prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPa
 ```
 
 ## Run MCMC
-```{r}
+```{r results= "hide", cache=TRUE}
 bayesianSetup <- createBayesianSetup(likelihood, prior, best = newPars[parSel], names = rownames(refPars)[parSel])
 settings = list(iterations = 100000, adapt = F, optimize = F, proposalScaling = 1)
 out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "Metropolis", settings = settings)
 ```
 
 ## Plot results
-```{r , fig.height=4, fig.cap="Output from perfect model with unbalanced obs after calibration"}
+```{r , fig.height=7, fig.cap="Output from perfect model with unbalanced obs after calibration"}
 par(mfrow = c(2,2))
 plotTimeSeriesResults(x = out, model = runModel1, observed = obs[,1], error = errorFunction)
 plotTimeSeriesResults(x = out, model = runModel2, observed = obs[,2], error = errorFunction)
 plotTimeSeriesResults(x = out, model = runModel3, observed = obs[,3], error = errorFunction)
 ```
-
 # Model with error balanced perfect data (1000 obs) 
 Remove the root pool by setting allocation to vegetation Av = 1.0
 ## Likelihood 
 ```{r}
-newPars <- refPars
+newPars <- refPars$best
 newPars[8]  <- 1.0
 newPars[11] <- 0.0
 parSel = c(1:6, 12)
 likelihood <- function(x, sum = TRUE){
-  x         <- createMixWithDefaults(x, refPars$best, parSel)
+  x         <- createMixWithDefaults(x, newPars, parSel)
   predicted <- VSEM(x[1:11], PAR)
   diff      <- c(predicted[,1:3] - obs[,1:3])
   llValues  <- dnorm(diff, sd = (abs(c(predicted[,1:3])) + 0.0000001) * x[12], log = T) 
@@ -154,31 +151,30 @@ prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPa
 ```
 
 ## Run MCMC
-```{r}
+```{r results= "hide", cache=TRUE}
 bayesianSetup <- createBayesianSetup(likelihood, prior, best = newPars[parSel], names = rownames(refPars)[parSel])
 settings = list(iterations = 100000, adapt = F, optimize = F, proposalScaling = 1)
 out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "Metropolis", settings = settings)
 ```
 
 ## Plot results
-```{r fig.height=4, fig.cap="Output from model with error with 1000 balanced obs after calibration"}
+```{r fig.height=7, fig.cap="Output from model with error with 1000 balanced obs after calibration"}
 par(mfrow = c(2,2))
 plotTimeSeriesResults(x = out, model = runModel1, observed = obs[,1], error = errorFunction)
 plotTimeSeriesResults(x = out, model = runModel2, observed = obs[,2], error = errorFunction)
 plotTimeSeriesResults(x = out, model = runModel3, observed = obs[,3], error = errorFunction)
 ```
-
 # Model with error balanced perfect data (6 obs) 
 Remove the root pool by setting allocation to vegetation Av = 1.0
 ## Likelihood 
 ```{r}
-newPars <- refPars
+newPars <- refPars$best
 newPars[8]  <- 1.0
 newPars[11] <- 0.0
 parSel = c(1:6, 12)
 obsSel <- c(1,202,390,550,750,920)
 likelihood <- function(x, sum = TRUE){
-  x         <- createMixWithDefaults(x, refPars$best, parSel)
+  x         <- createMixWithDefaults(x, newPars, parSel)
   predicted <- VSEM(x[1:11], PAR)
   diff      <- c(predicted[obsSel,1:3] - obs[obsSel,1:3])
   llValues  <- dnorm(diff, sd = (abs(c(predicted[obsSel,1:3])) + 0.0000001) * x[12], log = T) 
@@ -192,14 +188,14 @@ prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPa
 ```
 
 ## Run MCMC
-```{r}
+```{r results= "hide", cache=TRUE}
 bayesianSetup <- createBayesianSetup(likelihood, prior, best = newPars[parSel], names = rownames(refPars)[parSel])
 settings = list(iterations = 100000, adapt = F, optimize = F, proposalScaling = 1)
 out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "Metropolis", settings = settings)
 ```
 
 ## Plot results
-```{r  fig.height=4, fig.cap="Output from model with error with six balanced obs after calibration"}
+```{r  fig.height=7, fig.cap="Output from model with error with six balanced obs after calibration"}
 par(mfrow = c(2,2))
 plotTimeSeriesResults(x = out, model = runModel1, observed = obs[,1], error = errorFunction)
 plotTimeSeriesResults(x = out, model = runModel2, observed = obs[,2], error = errorFunction)
@@ -210,13 +206,13 @@ plotTimeSeriesResults(x = out, model = runModel3, observed = obs[,3], error = er
 Remove the root pool by setting allocation to vegetation Av = 1.0
 ## Likelihood 
 ```{r}
-newPars <- refPars
+newPars <- refPars$best
 newPars[8]  <- 1.0
 newPars[11] <- 0.0
 parSel = c(1:6, 12)
 obsSel <- c(1,202,390,550,750,920)
 likelihood <- function(x, sum = TRUE){
-  x         <- createMixWithDefaults(x, refPars$best, parSel)
+  x         <- createMixWithDefaults(x, newPars, parSel)
   predicted <- VSEM(x[1:11], PAR)
   diff       <- c(predicted[,c(1,3)] - obs[,c(1,3)])
   llValues1  <- dnorm(diff, sd = (abs(c(predicted[,c(1,3)])) + 0.0000001) * x[12], log = T) 
@@ -234,17 +230,16 @@ prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPa
 ```
 
 ## Run MCMC
-```{r }
+```{r results= "hide", cache=TRUE}
 bayesianSetup <- createBayesianSetup(likelihood, prior, best = newPars[parSel], names = rownames(refPars)[parSel])
 settings = list(iterations = 100000, adapt = F, optimize = F, proposalScaling = 1)
 out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "Metropolis", settings = settings)
 ```
 
 ## Plot results
-```{r fig.height=4, fig.cap="Output from model with error with unbalanced obs after calibration"}
+```{r fig.height=7, fig.cap="Output from model with error with unbalanced obs after calibration"}
 par(mfrow = c(2,2))
 plotTimeSeriesResults(x = out, model = runModel1, observed = obs[,1], error = errorFunction)
 plotTimeSeriesResults(x = out, model = runModel2, observed = obs[,2], error = errorFunction)
 plotTimeSeriesResults(x = out, model = runModel3, observed = obs[,3], error = errorFunction)
 ```
-
