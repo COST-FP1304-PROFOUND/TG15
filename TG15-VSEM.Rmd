@@ -66,7 +66,7 @@ settings = list(iterations = 100000, adapt = F, optimize = F, proposalScaling = 
 out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "Metropolis", settings = settings)
 ```
 ## Plot results
-```{r fig.height=7, fig.cap="Output from perfect model after calibration"}
+```{r cache=TRUE, fig.height=7, fig.cap="Output from perfect model after calibration"}
 runModel1 <- function(par){
   x = createMixWithDefaults(par, newPars, parSel)
   predicted <- VSEM(x[1:11], PAR)
@@ -122,7 +122,7 @@ out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "Metropolis", settings =
 ```
 
 ## Plot results
-```{r , fig.height=7, fig.cap="Output from perfect model with unbalanced obs after calibration"}
+```{r cache=TRUE, fig.height=7, fig.cap="Output from perfect model with unbalanced obs after calibration"}
 par(mfrow = c(2,2))
 plotTimeSeriesResults(x = out, model = runModel1, observed = obs[,1], error = errorFunction)
 plotTimeSeriesResults(x = out, model = runModel2, observed = obs[,2], error = errorFunction)
@@ -158,7 +158,7 @@ out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "Metropolis", settings =
 ```
 
 ## Plot results
-```{r fig.height=7, fig.cap="Output from model with error with 1000 balanced obs after calibration"}
+```{r cache=TRUE, fig.height=7, fig.cap="Output from model with error with 1000 balanced obs after calibration"}
 par(mfrow = c(2,2))
 plotTimeSeriesResults(x = out, model = runModel1, observed = obs[,1], error = errorFunction)
 plotTimeSeriesResults(x = out, model = runModel2, observed = obs[,2], error = errorFunction)
@@ -195,7 +195,7 @@ out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "Metropolis", settings =
 ```
 
 ## Plot results
-```{r  fig.height=7, fig.cap="Output from model with error with six balanced obs after calibration"}
+```{r  cache=TRUE, fig.height=7, fig.cap="Output from model with error with six balanced obs after calibration"}
 par(mfrow = c(2,2))
 plotTimeSeriesResults(x = out, model = runModel1, observed = obs[,1], error = errorFunction)
 plotTimeSeriesResults(x = out, model = runModel2, observed = obs[,2], error = errorFunction)
@@ -237,9 +237,33 @@ out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "Metropolis", settings =
 ```
 
 ## Plot results
-```{r fig.height=7, fig.cap="Output from model with error with unbalanced obs after calibration"}
+```{r cache=TRUE, fig.height=7, fig.cap="Output from model with error with unbalanced obs after calibration"}
 par(mfrow = c(2,2))
 plotTimeSeriesResults(x = out, model = runModel1, observed = obs[,1], error = errorFunction)
 plotTimeSeriesResults(x = out, model = runModel2, observed = obs[,2], error = errorFunction)
 plotTimeSeriesResults(x = out, model = runModel3, observed = obs[,3], error = errorFunction)
 ```
+
+# TODO Experiment that includes obs bias(es)
+Additive and or multiplicative for now 
+
+# TODO Add multiplicative/additive bias terms to model and obs
+One parameter for each output to be calibrated
+
+# TODO Add temperature input and Q10 type respiration 
+Temperature field has seasonal cycle similar to PAR but should have a slight lag
+
+# TODO include AR type structure in model/obs bias
+
+# Longer term ideas
+## use the formalism of Rougier(2007) in BC
+The idea here is to learn about the inclusion of erros by analysing model data mismatch after an initial 
+calbration. Correlations between the mismatches of NEE, Cv and Cs could hten be included in the calibration 
+via Gaussian $\mu$ and $\sigma$ terms using the formalism of Rougier(2007). 
+
+## include GAMMS in BC
+
+## calibrate a simplier model to the output of a more complex model
+Before embarking on calibration against real obs an experiment where we create virtual data form a complex data 
+and try to fit a simple model using what we have learned already about how to include terms that represent 
+model structural error in the BC. 
