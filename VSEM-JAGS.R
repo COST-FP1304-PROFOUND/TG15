@@ -11,21 +11,27 @@ VSEM <- " model {
   Cr[1]  ~ dunif(  0, 200. )
   Cv[1]  ~ dunif(  0, 400. )
   Cs[1]  ~ dunif(  0, 1000. )
+  ## update the states
   for (i in 2:n) {
-    Cv[i]  <- Cv[i-1]  + Av*NPP[i-1] - Cv[i-1]/(tauV/1000.)
-    Cr[i]  <- Cr[i-1]  + (1.0-Av)*NPP[i-1]  - Cr[i-1]/(tauR/1000.)
-    Cs[i]  <- Cs[i-1]  + Cr[i-1]/tauR + Cv[i-1]/tauV - Cs[i-1]/(tauS/10000.)
+    Cv[i]  <- Cv[i-1]  + Av*NPP[i-1] - Cv[i-1]/(tauV*1000.)
+    Cr[i]  <- Cr[i-1]  + (1.0-Av)*NPP[i-1]  - Cr[i-1]/(tauR*1000.)
+    Cs[i]  <- Cs[i-1]  + Cr[i-1]/(tauR*1000) + Cv[i-1]/(tauV*1000) - Cs[i-1]/(tauS*10000.)
   }
   for (i in 1:n) {
+      ## Fluxes
+      G[i]   <- PAR[i] * (LUE/1000.)* (1.0 - exp(-1.0*KEXT*LAR*Cv[i]))
+      NPP[i]  <- (1.0-GAMMA)*G[i]
+      NEE[i]  <- (Cs[i]/(tauS*10000.) + GAMMA*G[i]) - G[i]
+
+      ## Calculate precisions
       tauNEE[i]  <- pow( cvNEE   * NEE[i]  , -2 )
       tauCv[i]  <- pow( cvCv   * Cv[i]  , -2 )
       tauCs[i]  <- pow( cvCs   * Cs[i]  , -2 )
-    NEEobs[i]    ~ dnorm( NEE[i], tauNEE[i] )
-    Cvobs[i]     ~ dnorm( Cv[i], tauCv[i] )
-    Csobs[i]     ~ dnorm( Cs[i], tauCs[i] )
-       G[i]   <- PAR[i] * (LUE/1000.)* (1.0 - exp(-1.0*KEXT*LAR*Cv[i]))
-      NPP[i]  <- (1.0-GAMMA)*G[i]
-      NEE[i]  <- (Cs[i]/tauS + GAMMA*G[i]) - G[i]
+
+      ## Likelihood
+      NEEobs[i]    ~ dnorm( NEE[i], tauNEE[i] )
+      Cvobs[i]     ~ dnorm( Cv[i], tauCv[i] )
+      Csobs[i]     ~ dnorm( Cs[i], tauCs[i] )
   }
   KEXT   ~ dunif( 0.2, 1. )
   LAR    ~ dunif( 0.2, 3. )
@@ -39,14 +45,14 @@ VSEM <- " model {
   cvCv   ~ dunif( 0.0, 1.0 )
   cvCs   ~ dunif( 0.0, 1.0 )
 }"
-writeLines( VSEM, con="VSEM.txt" )
 
 VSEMdata       <- list(n=n, NEEobs=NEEobs, Cvobs=Cvobs, Csobs=Csobs, PAR=PAR)
-VSEMoutputs    <- c( "cvNEE", "cvCv", "cvCs", "KEXT", "LAR","LUE", "GAMMA",
-                    "tauV","tauR","tauS","Av","NEE","G","PAR","Cv","Cs","Cr")
+VSEMoutputs    <- c( "cvNEE", "cvCv", "cvCs", "cvCr", "KEXT", "LAR","LUE", 
+                     "GAMMA","tauV","tauR","tauS","Av","NEE","G","PAR",
+                     "Cv","Cs","Cr")
 nadapt         <- 100; nbi <- 100; nit <- 1000
 ## nadapt         <- 1000; nbi <- 1000; nit <- 10000
-jagsVSEM       <- jags.model ( "VSEM.txt", data=VSEMdata, n.chains=1, n.adapt=nadapt)
+jagsVSEM       <- jags.model ( textConnection(VSEM), data=VSEMdata, n.chains=1, n.adapt=nadapt)
 update( jagsVSEM, n.iter=nbi )
 codaSamples    <- coda.samples( jagsVSEM, var=VSEMoutputs, n.iter=nit, thin=20 )
 mcmcChain      <- as.matrix( codaSamples )
@@ -147,7 +153,7 @@ plot(   days, ts_PAR, pch=16, ylab="", main="PAR",
         ylim=c(min(ts_PAR,na.rm=TRUE),max(ts_PAR,na.rm=TRUE)) )
 
 
-Par(mfrow=c(1,1))
+par(mfrow=c(1,1))
 plot(   days, ts_Cs, pch=16, ylab="", main="Cs",
         ylim=c(0,max(ts_Cs,Csobs,na.rm=TRUE)) )
 arrows( days, ts_Cs-ts_Cs.sd, days, ts_Cs+ts_Cs.sd,
