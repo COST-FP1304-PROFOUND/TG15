@@ -3,14 +3,15 @@ title: "Experiments for TG15 with VSEM"
 author: "David Cameron and Mike Dietze"
 date: '`r Sys.Date()`'
 output:
-  beamer_presentation:
-             includes:
-               in_header: mystyles.sty
+  slidy_presentation: default
+  html_document: default
   pdf_document:
     fig_caption: yes
     number_sections: yes
     toc: yes
-  html_document: default
+  beamer_presentation:
+    includes:
+      in_header: mystyles.sty
   word_document: default
 ---
 
@@ -167,7 +168,7 @@ if(!file.exists("obs.RData")|CLEAN.BUILD){
   ## calculate 'true' output and pseudodata
   referenceData         <- VSEM(refPars$best[1:(nvar-1)], PAR,vers=2) 
   obs                   <- referenceData + rnorm(length(referenceData), sd = (abs(referenceData) + 1E-7) * refPars$best[nvar])
-  save(ndays,PAR,refPars,referenceData,obs,file="obs.RData")
+  save(nvar,ndays,PAR,refPars,referenceData,obs,file="obs.RData")
   if(PLOT.DIAGNOSTICS){
     par(mfrow=c(3,1))
     for(i in 1:3){
