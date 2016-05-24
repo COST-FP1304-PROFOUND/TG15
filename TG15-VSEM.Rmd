@@ -16,17 +16,19 @@ output:
 
 ```{r include=FALSE}
 library(BayesianTools)
-
+CLEAN.BUILD = FALSE
+PLOT.DIAGNOSTICS = TRUE
 ```
 
 ```{r include=FALSE}
-plotTimeSeriesResults <- function(x, model, observed, error = NULL, plotResiduals = T, start = 1){
+plotTimeSeriesResults <- function(x, model, observed, error = NULL, plotResiduals = T, start = 1,pool=1){
   
   if(inherits(x,"bayesianOutput")) parMatrix = getSample(x, start = start)
   else if (class(sampler) == "matrix") parMatrix = sampler
   else stop("wrong type give to variable sampler")
   
-  pred <- getPredictiveIntervals(parMatrix = parMatrix, model = model, thin = 1000, quantiles = c(0.025, 0.5, 0.975), error = error)
+  myModel <- function(x) model(x,pool)
+  pred <- getPredictiveIntervals(parMatrix = parMatrix, model = myModel, thin = 1000, quantiles = c(0.025, 0.5, 0.975), error = error)
   
   plotTimeSeries(observed = observed, predicted = pred[2,], confidenceBand = pred[c(1,3),])
 }
@@ -84,16 +86,34 @@ NPP &= (1-GAMMA) \times GPP
  - Add noise to create idealised observations
 
 ```{r include=FALSE}
-set.seed(123)
-## ndays                 <- 366
-ndays                 <- 1000
-PAR                   <- VSEMcreatePAR(1:ndays)
-refPars               <- VSEMgetDefaults()
-refPars[12,]          <- c(0.1, 0.001, 0.5)
-rownames(refPars)[12] <- "error-sd"
-referenceData         <- VSEM(refPars$best[1:11], PAR) 
-obs                   <- referenceData + rnorm(length(referenceData), sd = (abs(referenceData) + 1E-7) * refPars$best[12])
-
+if(!file.exists("obs.RData")|CLEAN.BUILD){
+  set.seed(123)
+  ## ndays                 <- 366
+  ndays                 <- 1000
+  PAR                   <- VSEMcreatePAR(1:ndays)
+  refPars               <- VSEMgetDefaults()
+  ## merge non-identifiable parameters
+  refPars[1,] <- refPars[1,]*refPars[2,]
+  refPars[3,] <- refPars[3,]*(1-refPars[4,c(1,3,2)])
+  refPars <- refPars[-c(2,4),] 
+  nvar = nrow(refPars)+1
+  ## add SD
+  refPars[nvar,]          <- c(0.1, 0.001, 0.5)
+  rownames(refPars)[nvar] <- "error-sd"
+  ## calculate 'true' output and pseudodata
+  referenceData         <- VSEM(refPars$best[1:(nvar-1)], PAR,vers=2) 
+  obs                   <- referenceData + rnorm(length(referenceData), sd = (abs(referenceData) + 1E-7) * refPars$best[nvar])
+  save(ndays,PAR,refPars,referenceData,obs,file="obs.RData")
+  if(PLOT.DIAGNOSTICS){
+    par(mfrow=c(3,1))
+    for(i in 1:3){
+      plot(obs[,i])
+      lines(referenceData[,i],col=3,lwd=3)
+    }
+  }
+} else {
+  load("obs.RData")
+}
 ```
 # Perfect model balanced perfect data 
 ## Likelihood 
@@ -101,12 +121,12 @@ Gaussian 1000 obs for each of NEE, Cv and Cs
 
 ```{r include=FALSE}
 newPars <- refPars$best
-parSel = c(1:6, 12)
+parSel = c(1:6, nvar)
 likelihood <- function(x, sum = TRUE){
   x         <- createMixWithDefaults(x, newPars, parSel)
-  predicted <- VSEM(x[1:11], PAR)
+  predicted <- VSEM(x[-nvar], PAR,vers=2)
   diff      <- c(predicted[,1:3] - obs[,1:3])
-  llValues  <- dnorm(diff, sd = (abs(c(predicted[,1:3])) + 0.0000001) * x[12], log = T) 
+  llValues  <- dnorm(diff, sd = (abs(c(predicted[,1:3])) + 0.0000001) * x[nvar], log = T) 
   if (sum == FALSE) return(llValues)
   else return(sum(llValues))
 }
@@ -123,11 +143,15 @@ prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPa
 ## Run MCMC
 DREAMzs nChain=20000
 
-```{r include=FALSE, results = "hide", cache=TRUE}
-bayesianSetup <- createBayesianSetup(likelihood, prior,best = newPars[parSel], names = rownames(refPars)[parSel])
-settings = list(iterations = 20000)
-out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "DREAMzs", settings = settings)
-
+```{r include=FALSE, results = "hide"}
+if(!file.exists("run1.RData")|CLEAN.BUILD){
+  bayesianSetup <- createBayesianSetup(likelihood, prior,best = newPars[parSel], names = rownames(refPars)[parSel])
+  settings = list(iterations = 10000)
+  out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "DREAMzs", settings = settings)
+  save(out,file="run1.RData")
+} else {
+  load("run1.RData")
+}
 ## length(unique(out$chain[,1]))
 ## pdf("trace.pdf")
 ## plot(out)
@@ -137,31 +161,48 @@ out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "DREAMzs", settings = se
 
 # Perfect model balanced perfect data - results
 ```{r include=FALSE}
-runModel1 <- function(par){
+runModel <- function(par,pool){
   x = createMixWithDefaults(par, newPars, parSel)
   predicted <- VSEM(x[1:11], PAR)
-  return(predicted[,1])
-}
-runModel2 <- function(par){
-  x = createMixWithDefaults(par, newPars, parSel)
-  predicted <- VSEM(x[1:11], PAR)
-  return(predicted[,2])
-}
-runModel3 <- function(par){
-  x = createMixWithDefaults(par, newPars, parSel)
-  predicted <- VSEM(x[1:11], PAR)
-  return(predicted[,3])
+  return(predicted[,pool])
 }
 
-errorFunction <- function(mean, par) rnorm(length(mean), mean = mean, sd = abs(mean)*par[7])
+errorFunction <- function(mean, par) rnorm(length(mean), mean = mean, sd = abs(mean)*par[length(par)])
+
+plotPosteriors <- function(out){
+  np = length(parSel)  ## number of parameters fit
+  outM <- as.matrix(out$chain)[,1:np]
+  colnames(outM) <- rownames(refPars)[parSel]
+  for(i in 1:np){
+    true = refPars[parSel[i],1]
+    d = density(outM[,i])
+    xlim = range(c(d$x,true))
+    plot(d,xlim=xlim,main=colnames(outM)[i])
+    abline(v=true,col=2,lwd=3)
+  }
+}
 
 ```
 
-```{r cache=TRUE, echo=FALSE, background='white', fig.height=7, fig.cap="Output from perfect model after calibration"}
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="Output from perfect model after calibration"}
 par(mfrow = c(2,2))
-plotTimeSeriesResults(x = out, model = runModel1, observed = obs[,1], error = errorFunction)
-plotTimeSeriesResults(x = out, model = runModel2, observed = obs[,2], error = errorFunction)
-plotTimeSeriesResults(x = out, model = runModel3, observed = obs[,3], error = errorFunction)
+nmc = nrow(out$chain[[1]])
+out$chain <- window(out$chain,start=nmc/2,thin=(nmc/2)/5000)
+for(i in 1:3){
+  plotTimeSeriesResults(x = out, model = runModel, observed = obs[,i], error = errorFunction,pool=i)
+  lines(referenceData[,i],col=3,lwd=1)
+}
+
+if(PLOT.DIAGNOSTICS){
+  
+  plot(out$chain)
+  
+  par(mfrow=c(3,2))
+  plotPosteriors(out)
+  
+  par(mfrow=c(1,1))
+  correlationPlot(out)
+}
 
 ```
 
