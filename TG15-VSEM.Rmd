@@ -122,6 +122,7 @@ Gaussian 1000 obs for each of NEE, Cv and Cs
 ```{r include=FALSE}
 newPars <- refPars$best
 parSel = c(1:6, nvar)
+rm(obsSel)
 likelihood <- function(x, sum = TRUE){
   x         <- createMixWithDefaults(x, newPars, parSel)
   predicted <- VSEM(x[-nvar], PAR,vers=2)
@@ -182,28 +183,34 @@ plotPosteriors <- function(out){
   }
 }
 
+vsemDiagnostics <- function(){
+  ## thin
+  nmc = nrow(out$chain[[1]])
+  out$chain <- window(out$chain,start=nmc/2,thin=(nmc/2)/5000)
+
+  par(mfrow = c(2,2))
+  for(i in 1:3){
+    myObs = obs[,i]
+    if(exists("obsSel") & i == 2) myObs[-obsSel] <- NA
+    plotTimeSeriesResults(x = out, model = runModel, observed = myObs, error = errorFunction,pool=i)
+    lines(referenceData[,i],col=3,lwd=1)
+  }
+  
+  if(PLOT.DIAGNOSTICS){
+    
+    #plot(out$chain)
+    
+    par(mfrow=c(3,2))
+    plotPosteriors(out)
+    
+    par(mfrow=c(1,1))
+    correlationPlot(out)
+  }
+}
 ```
 
 ```{r echo=FALSE, background='white', fig.height=7, fig.cap="Output from perfect model after calibration"}
-par(mfrow = c(2,2))
-nmc = nrow(out$chain[[1]])
-out$chain <- window(out$chain,start=nmc/2,thin=(nmc/2)/5000)
-for(i in 1:3){
-  plotTimeSeriesResults(x = out, model = runModel, observed = obs[,i], error = errorFunction,pool=i)
-  lines(referenceData[,i],col=3,lwd=1)
-}
-
-if(PLOT.DIAGNOSTICS){
-  
-  plot(out$chain)
-  
-  par(mfrow=c(3,2))
-  plotPosteriors(out)
-  
-  par(mfrow=c(1,1))
-  correlationPlot(out)
-}
-
+vsemDiagnostics()
 ```
 
 # Perfect model unbalanced perfect data 
@@ -212,17 +219,16 @@ Gaussian 1000 obs for NEE and Cs and only 6 for Cv
 
 ```{r include=FALSE}
 newPars <- refPars$best
-parSel = c(1:6, 12)
-## obsSel = seq(1,366,72)
+parSel = c(1:6, nvar)
 obsSel <- c(1,202,390,550,750,920)
 likelihood <- function(x, sum = TRUE){
   x         <- createMixWithDefaults(x, newPars, parSel)
-  predicted <- VSEM(x[1:11], PAR)
+  predicted <- VSEM(x[1:(nvar-1)], PAR)
   diff       <- c(predicted[,c(1,3)] - obs[,c(1,3)])
-  llValues1  <- dnorm(diff, sd = (abs(c(predicted[,c(1,3)])) + 0.0000001) * x[12], log = T) 
+  llValues1  <- dnorm(diff, sd = (abs(c(predicted[,c(1,3)])) + 0.0000001) * x[nvar], log = T) 
 
   diff       <- c(predicted[obsSel,2] - obs[obsSel,2])
-  llValues2  <- dnorm(diff, sd = (abs(c(predicted[obsSel,2])) + 0.0000001) * x[12], log = T) 
+  llValues2  <- dnorm(diff, sd = (abs(c(predicted[obsSel,2])) + 0.0000001) * x[nvar], log = T) 
 
   if (sum == FALSE) return(llValues)
   else return(sum(llValues1,llValues2))
@@ -240,25 +246,24 @@ prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPa
 ## Run MCMC
 DREAMzs nChain=20000
 
-```{r include=FALSE, results = "hide", cache=TRUE}
-bayesianSetup <- createBayesianSetup(likelihood, prior,best = newPars[parSel], names = rownames(refPars)[parSel])
-settings = list(iterations = 20000)
-out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "DREAMzs", settings = settings)
-
+```{r include=FALSE, results = "hide"}
+if(!file.exists("run2.RData")|CLEAN.BUILD){
+  bayesianSetup <- createBayesianSetup(likelihood, prior,best = newPars[parSel], names = rownames(refPars)[parSel])
+  settings = list(iterations = 20000)
+  out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "DREAMzs", settings = settings)
+  save(out,file="run2.RData")
 ## length(unique(out$chain[,1]))
 ## pdf("trace.pdf")
 ## plot(out)
 ## dev.off()
-
+} else {
+  load("run2.RData")
+} 
 ```
 
 # Perfect model unbalanced perfect data - results
-```{r cache=TRUE, echo=FALSE, background='white', fig.height=7, fig.cap="Output from perfect model after calibration"}
-par(mfrow = c(2,2))
-plotTimeSeriesResults(x = out, model = runModel1, observed = obs[,1], error = errorFunction)
-plotTimeSeriesResults(x = out, model = runModel2, observed = nobs[,2], error = errorFunction)
-plotTimeSeriesResults(x = out, model = runModel3, observed = obs[,3], error = errorFunction)
-
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="Output from perfect model after calibration"}
+vsemDiagnostics()
 ```
 
 # Model with error balanced perfect data (1000 obs) 
@@ -270,14 +275,16 @@ Gaussian 1000 obs for each of NEE, Cv and Cs
 
 ```{r include=FALSE}
 newPars <- refPars$best
-newPars[8]  <- 1.0
-newPars[11] <- 0.0
-parSel = c(1:6, 12)
+names(newPars) = row.names(refPars)
+newPars["Av"]  <- 1.0
+newPars["Cr"] <- 0.0
+parSel = c(1:6, nvar)
+rm(obsSel)
 likelihood <- function(x, sum = TRUE){
   x         <- createMixWithDefaults(x, newPars, parSel)
   predicted <- VSEM(x[1:11], PAR)
   diff      <- c(predicted[,1:3] - obs[,1:3])
-  llValues  <- dnorm(diff, sd = (abs(c(predicted[,1:3])) + 0.0000001) * x[12], log = T) 
+  llValues  <- dnorm(diff, sd = (abs(c(predicted[,1:3])) + 0.0000001) * x[nvar], log = T) 
   if (sum == FALSE) return(llValues)
   else return(sum(llValues))
 }
