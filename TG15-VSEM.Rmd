@@ -233,6 +233,33 @@ out <- fitVSEM("run2.RData")
 vsemDiagnostics(out,refPars)
 ```
 
+# Perfect model, low-volume of perfect data 
+## Likelihood 
+Gaussian 1000 obs for NEE and Cs and only 6 for Cv
+
+```{r include=FALSE,echo=FALSE, background='white', fig.height=7, fig.cap="Output from perfect model after calibration"}
+newPars <- refPars$best
+parSel = c(1:6, nvar)
+obsSel <- c(1,202,390,550,750,920)
+isLow = 1:3 ## which variables has few observations
+likelihood <- function(x, sum = TRUE){
+  x         <- createMixWithDefaults(x, newPars, parSel)
+  predicted <- VSEM(x[1:(nvar-1)], PAR)
+  diff       <- c(predicted[obsSel,] - obs[obsSel,])
+  llValues  <- dnorm(diff, sd = (abs(c(predicted[obsSel,])) + 0.0000001) * x[nvar], log = T) 
+
+  if (sum == FALSE) return(llValues)
+  else return(sum(llValues))
+}
+
+## Prior
+prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
+
+out <- fitVSEM("run9.RData")
+
+vsemDiagnostics(out,refPars)
+```
+
 # Model with error balanced perfect data (1000 obs) 
 Remove the root pool by setting allocation to vegetation Av = 1.0
 
