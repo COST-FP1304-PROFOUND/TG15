@@ -8,12 +8,9 @@ days   <- seq(n)
 PAR    <- (abs (sin(days/365 * pi)+ rnorm(n) *0.25)) *10
 
 VSEM <- " model {
-  Cr.ic  ~ dunif(  0, 200. )
-  Cv.ic  ~ dunif(  0, 400. )
-  Cs.ic  ~ dunif(  0, 100. )
-  Cr[1]  <- Cr.ic
-  Cv[1]  <- Cv.ic
-  Cs[1]  <- Cs.ic
+  Cr[1]  ~ dunif(  0, 200. )
+  Cv[1]  ~ dunif(  0, 400. )
+  Cs[1]  ~ dunif(  0, 100. )
   ## update the states
   for (i in 2:n) {
     Cv[i]  <- Cv[i-1]  + Av*NPP[i-1] - Cv[i-1]/(tauV*1000.)
@@ -22,7 +19,8 @@ VSEM <- " model {
   }
   for (i in 1:n) {
       ## Fluxes
-      G[i]   <- PAR[i] * (LUE/100.)* (1.0 - exp(-1.0*KEXT*LAR*Cv[i]))
+##      G[i]   <- PAR[i] * (LUE/100.)* (1.0 - exp(-1.0*KEXT*LAR*Cv[i]))
+      G[i]   <- PAR[i] * (LUE/1000.)* (1.0 - exp(-1.0*KEXT*Cv[i]))
       NPP[i]  <- (1.0-GAMMA)*G[i]
       NEE[i]  <- (Cs[i]/(tauS*10000.) + GAMMA*G[i]) - G[i]
 
@@ -36,8 +34,9 @@ VSEM <- " model {
       Cvobs[i]     ~ dnorm( Cv[i], tauCv[i] )
       Csobs[i]     ~ dnorm( Cs[i], tauCs[i] )
   }
-  KEXT   ~ dunif( 0.2, 1. )
-  LAR    ~ dunif( 0.2, 3. )
+#  KEXT   ~ dunif( 0.2, 1. )  ## KEXT*LAR is nonidentifiable
+#  LAR    ~ dunif( 0.2, 3. )
+  KEXT   ~ dunif( 0.04, 3. )
   LUE    ~ dunif( 0.5,10.0)
   GAMMA  ~ dunif( 0.2, 0.6 )
   tauV   ~ dunif( 0.5,3. )
@@ -49,56 +48,77 @@ VSEM <- " model {
   cvCs   ~ dunif( 0.0, 1.0 )
 }"
 
+truth = refPars$best
+names(truth) = row.names(refPars)
+ic = as.list(truth)
+ic$KEXT = ic$KEXT*ic$LAR
+ic$LAR = NULL
+ic[8:11] = NULL
+ic$LUE = ic$LUE*1000
+ic$tauV = ic$tauV/1000
+ic$tauR = ic$tauR/1000
+ic$tauS = ic$tauS/10000
+
 VSEMdata       <- list(n=n, NEEobs=NEEobs, Cvobs=Cvobs, Csobs=Csobs, PAR=PAR)
-VSEMic         <- list(Cv.ic=Cvobs[1],Cs.ic=Csobs[1])
-VSEMoutputs    <- c( "cvNEE", "cvCv", "cvCs", "KEXT", "LAR","LUE", 
+#VSEMic         <- list(Cv.ic=Cvobs[1],Cs.ic=Csobs[1])
+VSEMoutputs    <- c( "cvNEE", "cvCv", "cvCs", "KEXT", "LUE",  #"LAR", 
                      "GAMMA","tauV","tauR","tauS","Av","NEE","G","PAR",
                      "Cv","Cs","Cr")
 nadapt         <- 100; nbi <- 100; nit <- 1000
 ## nadapt         <- 1000; nbi <- 1000; nit <- 10000
-jagsVSEM       <- jags.model ( textConnection(VSEM), data=VSEMdata, n.chains=3, n.adapt=nadapt,inits = VSEMic)
+jagsVSEM       <- jags.model ( textConnection(VSEM), data=VSEMdata, n.chains=3, n.adapt=nadapt,inits = ic)
 update( jagsVSEM, n.iter=nbi )
 codaSamples    <- coda.samples( jagsVSEM, var=VSEMoutputs, n.iter=nit, thin=20 )
-gelman.diag(codaSamples)
+#gelman.diag(codaSamples)
 mcmcChain      <- as.matrix( codaSamples )
+
 
 par(mfrow=c(3,3))
 hist( mcmcChain[,"KEXT"], xlab="", ylab="",
       main=paste( "KEXT \n( sd =",signif(sd(mcmcChain[,"KEXT"]),2), ")" ) 
      )
-hist( mcmcChain[,"LAR"], xlab="", ylab="",
-      main=paste( "LAR \n( sd =",signif(sd(mcmcChain[,"LAR"]),2), ")" ) 
-     )
+abline(v=truth["KEXT"]*truth["LAR"],col=2)
+#hist( mcmcChain[,"LAR"], xlab="", ylab="",
+#      main=paste( "LAR \n( sd =",signif(sd(mcmcChain[,"LAR"]),2), ")" ) 
+#     )
 hist( mcmcChain[,"LUE"], xlab="", ylab="",
       main=paste( "LUE \n( sd =",signif(sd(mcmcChain[,"LUE"]),2), ")" ) 
      )
+abline(v=truth["LUE"]*1000,col=2)
 hist( mcmcChain[,"GAMMA"], xlab="", ylab="",
       main=paste( "GAMMA \n( sd =",signif(sd(mcmcChain[,"GAMMA"]),2), ")")
      )
+abline(v=truth["GAMMA"],col=2)
 hist( mcmcChain[,"tauV"], xlab="", ylab="",
       main=paste( "tauV \n( sd =",signif(sd(mcmcChain[,"tauV"]),2), ")" ) 
      )
+abline(v=truth["tauV"]/1000,col=2)
 hist( mcmcChain[,"tauR"], xlab="", ylab="",
       main=paste( "tauR \n( sd =",signif(sd(mcmcChain[,"tauR"]),2), ")" ) 
      )
+abline(v=truth["tauR"]/1000,col=2)
 hist( mcmcChain[,"tauS"], xlab="", ylab="",
       main=paste( "tauS \n( sd =",signif(sd(mcmcChain[,"tauS"]),2), ")" ) 
      )
+abline(v=truth["tauS"]/10000,col=2)
 hist( mcmcChain[,"Av"], xlab="", ylab="",
       main=paste( "Av \n( sd =",signif(sd(mcmcChain[,"Av"]),2), ")" ) 
      )
-
+abline(v=truth["Av"],col=2)
 
 par(mfrow=c(3,2))
 hist( mcmcChain[,"Cv[1]"], xlab="", ylab="",
       main=paste( "Cv[1] \n( sd =",signif(sd(mcmcChain[,"Cv[1]"]),2), ")" ) 
      )
+abline(v=truth["Cv"],col=2)
 hist( mcmcChain[,"Cr[1]"], xlab="", ylab="",
       main=paste( "Cr[1] \n( sd =",signif(sd(mcmcChain[,"Cr[1]"]),2), ")" ) 
      )
+abline(v=truth["Cr"],col=2)
 hist( mcmcChain[,"Cs[1]"], xlab="", ylab="",
       main=paste( "Cs[1] \n( sd =",signif(sd(mcmcChain[,"Cs[1]"]),2), ")" ) 
      )
+abline(v=truth["Cs"],col=2)
 hist( mcmcChain[,"cvCv"], xlab="", ylab="",
       main=paste( "cvCv \n( sd =",signif(sd(mcmcChain[,"cvCv"]),2), ")" ) 
      )
