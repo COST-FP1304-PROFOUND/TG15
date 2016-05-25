@@ -423,6 +423,37 @@ obs <- obs.orig
 
 ![](TG15-clean_files/figure-beamer/unnamed-chunk-42-1.pdf)
 
+# Perfect model low-volume data that has an additive bias
+Cs obs have an additive error of 4
+
+```{r include=FALSE}
+obs <- obs.orig
+obs[,3] <- obs[,3] + 4.0
+
+newPars <- refPars$best
+parSel = c(1:6, nvar)
+obsSel <- c(1,202,390,550,750,920)
+isLow = 1:3
+likelihood <- function(x, sum = TRUE){
+  x         <- createMixWithDefaults(x, newPars, parSel)
+  predicted <- VSEM(x[1:(nvar-1)], PAR)
+
+  diff       <- c(predicted[obsSel,] - obs[obsSel,])
+  llValues  <- dnorm(diff, sd = (abs(c(predicted[obsSel,])) + 0.0000001) * x[nvar], log = T) 
+
+  if (sum == FALSE) return(llValues)
+  else return(sum(llValues))
+}
+
+prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
+
+out <- fitVSEM("run10.RData")
+
+vsemDiagnostics(out,refPars)
+
+obs <- obs.orig
+
+```
 
 # Perfect model unbalanced data that has an additive bias with systmatic bias parameter
 Cs obs have an additive error of 4
@@ -464,6 +495,7 @@ vsemDiagnostics(out,addPars)
 ```
 
 ![](TG15-clean_files/figure-beamer/unnamed-chunk-48-1.pdf)
+
 
 
 # Short term ideas
