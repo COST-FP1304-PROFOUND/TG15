@@ -37,7 +37,6 @@ plotTimeSeriesResults <- function(x, model, observed, error = NULL, plotResidual
 
 ```
 # The TG15 issue
-![](moderrunbal.pdf)
 
 # What is the effective information content (IC) of observations
  - One eddy covariance tower with 17000 measurements count this as n = 1 or n = 17000 obs?
@@ -53,8 +52,6 @@ plotTimeSeriesResults <- function(x, model, observed, error = NULL, plotResidual
    - throwing away useful information
 
 # Thin observations 6 obs
-![](6obs.pdf
-)
 
 # Artificial experiments
  - calibration data model's own output to control:
@@ -355,7 +352,6 @@ vsemDiagnostics(out,refPars)
 ```
 
 # Model with error unbalanced perfect data - results
-![](moderrunbal.pdf)
 
 
 # Perfect model balanced data that has an additive bias 
@@ -421,7 +417,6 @@ obs <- obs.orig
 
 ```
 
-![](TG15-clean_files/figure-beamer/unnamed-chunk-42-1.pdf)
 
 # Perfect model low-volume data that has an additive bias
 Cs obs have an additive error of 4
@@ -493,9 +488,6 @@ out <- fitVSEM("run8.RData")
 vsemDiagnostics(out,addPars)
 
 ```
-
-![](TG15-clean_files/figure-beamer/unnamed-chunk-48-1.pdf)
-
 
 
 # Short term ideas
