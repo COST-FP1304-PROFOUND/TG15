@@ -3,14 +3,15 @@ title: "Experiments for TG15 with VSEM"
 author: "David Cameron and Mike Dietze"
 date: '`r Sys.Date()`'
 output:
-  beamer_presentation:
-             includes:
-               in_header: mystyles.sty
+  slidy_presentation: default
+  html_document: default
   pdf_document:
     fig_caption: yes
     number_sections: yes
     toc: yes
-  html_document: default
+  beamer_presentation:
+    includes:
+      in_header: mystyles.sty
   word_document: default
 ---
 
@@ -18,6 +19,7 @@ output:
 library(BayesianTools)
 CLEAN.BUILD = FALSE
 PLOT.DIAGNOSTICS = TRUE
+defParms = 1:9
 ```
 
 ```{r include=FALSE}
@@ -31,11 +33,11 @@ plotTimeSeriesResults <- function(x, model, observed, error = NULL, plotResidual
   pred <- getPredictiveIntervals(parMatrix = parMatrix, model = myModel, thin = 1000, quantiles = c(0.025, 0.5, 0.975), error = error)
   
   plotTimeSeries(observed = observed, predicted = pred[2,], confidenceBand = pred[c(1,3),])
+  lines(pred[2,],col="red",lwd=2)
 }
 
 ```
 # The TG15 issue
-![](moderrunbal.pdf)
 
 # What is the effective information content (IC) of observations
  - One eddy covariance tower with 17000 measurements count this as n = 1 or n = 17000 obs?
@@ -51,8 +53,6 @@ plotTimeSeriesResults <- function(x, model, observed, error = NULL, plotResidual
    - throwing away useful information
 
 # Thin observations 6 obs
-![](6obs.pdf
-)
 
 # Artificial experiments
  - calibration data model's own output to control:
@@ -81,6 +81,69 @@ NPP &= (1-GAMMA) \times GPP
 \end{align}
  - $C_v$, $C_r$ and $C_s$ : Carbon in vegetation, root and soil pools 
 
+```{r include=FALSE}
+## HELPER FUNCTIONS
+
+fitVSEM <- function(fname){
+  if(!file.exists(fname)|CLEAN.BUILD){
+    bayesianSetup <- createBayesianSetup(likelihood, prior,best = newPars[parSel], names = rownames(refPars)[parSel])
+    settings = list(iterations = 10000)
+    out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "DREAMzs", settings = settings)
+    save(out,file=fname)
+  } else {
+    load(fname)
+  }
+  invisible(out)
+}
+
+runModel <- function(par,pool){
+  x = createMixWithDefaults(par, newPars, parSel)
+  predicted <- VSEM(x[1:11], PAR)
+  return(predicted[,pool])
+}
+
+errorFunction <- function(mean, par) rnorm(length(mean), mean = mean, sd = abs(mean)*par[length(par)])
+
+plotPosteriors <- function(out,refPars){
+  np = length(parSel)  ## number of parameters fit
+  outM <- as.matrix(out$chain)[,1:np]
+  colnames(outM) <- rownames(refPars)[parSel]
+  for(i in 1:np){
+    true = refPars[parSel[i],1]
+    d = density(outM[,i])
+    xlim = range(c(d$x,true))
+    plot(d,xlim=xlim,main=colnames(outM)[i])
+    abline(v=true,col=2,lwd=3)
+  }
+}
+
+vsemDiagnostics <- function(out,refPars){
+  ## thin
+  nmc = nrow(out$chain[[1]])
+  out$chain <- window(out$chain,start=nmc/2,thin=(nmc/2)/5000)
+
+  par(mfrow = c(2,2))
+  for(i in 1:3){
+    myObs = obs[,i]
+    if(exists("obsSel") & i %in% isLow) myObs[-obsSel] <- NA
+    plotTimeSeriesResults(x = out, model = runModel, observed = myObs, error = errorFunction,pool=i)
+    lines(referenceData[,i],col=3,lwd=1)
+  }
+  
+  if(PLOT.DIAGNOSTICS){
+    
+    #plot(out$chain)
+    
+    par(mfrow=c(3,2))
+    plotPosteriors(out,refPars)
+    
+    par(mfrow=c(1,1))
+    correlationPlot(out)
+  }
+}
+```
+
+
 # Idealised experiment with virtual data from VSEM
  - Run model with a parameter vector output assign as 'truth'
  - Add noise to create idealised observations
@@ -103,7 +166,7 @@ if(!file.exists("obs.RData")|CLEAN.BUILD){
   ## calculate 'true' output and pseudodata
   referenceData         <- VSEM(refPars$best[1:(nvar-1)], PAR,vers=2) 
   obs                   <- referenceData + rnorm(length(referenceData), sd = (abs(referenceData) + 1E-7) * refPars$best[nvar])
-  save(ndays,PAR,refPars,referenceData,obs,file="obs.RData")
+  save(nvar,ndays,PAR,refPars,referenceData,obs,file="obs.RData")
   if(PLOT.DIAGNOSTICS){
     par(mfrow=c(3,1))
     for(i in 1:3){
@@ -115,13 +178,15 @@ if(!file.exists("obs.RData")|CLEAN.BUILD){
   load("obs.RData")
 }
 ```
+
 # Perfect model balanced perfect data 
-## Likelihood 
 Gaussian 1000 obs for each of NEE, Cv and Cs
 
-```{r include=FALSE}
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="Output from perfect model after calibration"}
 newPars <- refPars$best
-parSel = c(1:6, nvar)
+parSel = c(defParms, nvar)
+rm(obsSel)
+isLow = NULL
 likelihood <- function(x, sum = TRUE){
   x         <- createMixWithDefaults(x, newPars, parSel)
   predicted <- VSEM(x[-nvar], PAR,vers=2)
@@ -131,189 +196,97 @@ likelihood <- function(x, sum = TRUE){
   else return(sum(llValues))
 }
 
-```
-## Prior
-Uniform
-
-```{r include=FALSE}
 prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
-
-```
-
-## Run MCMC
-DREAMzs nChain=20000
-
-```{r include=FALSE, results = "hide"}
-if(!file.exists("run1.RData")|CLEAN.BUILD){
-  bayesianSetup <- createBayesianSetup(likelihood, prior,best = newPars[parSel], names = rownames(refPars)[parSel])
-  settings = list(iterations = 10000)
-  out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "DREAMzs", settings = settings)
-  save(out,file="run1.RData")
-} else {
-  load("run1.RData")
-}
-## length(unique(out$chain[,1]))
-## pdf("trace.pdf")
-## plot(out)
-## dev.off()
-
-```
-
-# Perfect model balanced perfect data - results
-```{r include=FALSE}
-runModel <- function(par,pool){
-  x = createMixWithDefaults(par, newPars, parSel)
-  predicted <- VSEM(x[1:11], PAR)
-  return(predicted[,pool])
-}
-
-errorFunction <- function(mean, par) rnorm(length(mean), mean = mean, sd = abs(mean)*par[length(par)])
-
-plotPosteriors <- function(out){
-  np = length(parSel)  ## number of parameters fit
-  outM <- as.matrix(out$chain)[,1:np]
-  colnames(outM) <- rownames(refPars)[parSel]
-  for(i in 1:np){
-    true = refPars[parSel[i],1]
-    d = density(outM[,i])
-    xlim = range(c(d$x,true))
-    plot(d,xlim=xlim,main=colnames(outM)[i])
-    abline(v=true,col=2,lwd=3)
-  }
-}
-
-```
-
-```{r echo=FALSE, background='white', fig.height=7, fig.cap="Output from perfect model after calibration"}
-par(mfrow = c(2,2))
-nmc = nrow(out$chain[[1]])
-out$chain <- window(out$chain,start=nmc/2,thin=(nmc/2)/5000)
-for(i in 1:3){
-  plotTimeSeriesResults(x = out, model = runModel, observed = obs[,i], error = errorFunction,pool=i)
-  lines(referenceData[,i],col=3,lwd=1)
-}
-
-if(PLOT.DIAGNOSTICS){
-  
-  plot(out$chain)
-  
-  par(mfrow=c(3,2))
-  plotPosteriors(out)
-  
-  par(mfrow=c(1,1))
-  correlationPlot(out)
-}
-
+out <- fitVSEM("run1.RData")
+vsemDiagnostics(out,refPars)
 ```
 
 # Perfect model unbalanced perfect data 
 ## Likelihood 
 Gaussian 1000 obs for NEE and Cs and only 6 for Cv
 
-```{r include=FALSE}
+```{r include=FALSE,echo=FALSE, background='white', fig.height=7, fig.cap="Output from perfect model after calibration"}
 newPars <- refPars$best
-parSel = c(1:6, 12)
-## obsSel = seq(1,366,72)
+parSel = c(defParms, nvar)
 obsSel <- c(1,202,390,550,750,920)
+isLow = 2 ## which variables has few observations
 likelihood <- function(x, sum = TRUE){
   x         <- createMixWithDefaults(x, newPars, parSel)
-  predicted <- VSEM(x[1:11], PAR)
+  predicted <- VSEM(x[1:(nvar-1)], PAR)
   diff       <- c(predicted[,c(1,3)] - obs[,c(1,3)])
-  llValues1  <- dnorm(diff, sd = (abs(c(predicted[,c(1,3)])) + 0.0000001) * x[12], log = T) 
+  llValues1  <- dnorm(diff, sd = (abs(c(predicted[,c(1,3)])) + 0.0000001) * x[nvar], log = T) 
 
   diff       <- c(predicted[obsSel,2] - obs[obsSel,2])
-  llValues2  <- dnorm(diff, sd = (abs(c(predicted[obsSel,2])) + 0.0000001) * x[12], log = T) 
+  llValues2  <- dnorm(diff, sd = (abs(c(predicted[obsSel,2])) + 0.0000001) * x[nvar], log = T) 
 
   if (sum == FALSE) return(llValues)
   else return(sum(llValues1,llValues2))
 }
 
-```
 ## Prior
-Uniform
-
-```{r include=FALSE}
 prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
 
+out <- fitVSEM("run2.RData")
+
+vsemDiagnostics(out,refPars)
 ```
 
-## Run MCMC
-DREAMzs nChain=20000
+# Perfect model, low-volume of perfect data 
+## Likelihood 
+Gaussian 1000 obs for NEE and Cs and only 6 for Cv
 
-```{r include=FALSE, results = "hide", cache=TRUE}
-bayesianSetup <- createBayesianSetup(likelihood, prior,best = newPars[parSel], names = rownames(refPars)[parSel])
-settings = list(iterations = 20000)
-out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "DREAMzs", settings = settings)
+```{r include=FALSE,echo=FALSE, background='white', fig.height=7, fig.cap="Output from perfect model after calibration"}
+newPars <- refPars$best
+parSel = c(defParms, nvar)
+obsSel <- c(1,202,390,550,750,920)
+isLow = 1:3 ## which variables has few observations
+likelihood <- function(x, sum = TRUE){
+  x         <- createMixWithDefaults(x, newPars, parSel)
+  predicted <- VSEM(x[1:(nvar-1)], PAR)
+  diff       <- c(predicted[obsSel,] - obs[obsSel,])
+  llValues  <- dnorm(diff, sd = (abs(c(predicted[obsSel,])) + 0.0000001) * x[nvar], log = T) 
 
-## length(unique(out$chain[,1]))
-## pdf("trace.pdf")
-## plot(out)
-## dev.off()
+  if (sum == FALSE) return(llValues)
+  else return(sum(llValues))
+}
 
-```
+## Prior
+prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
 
-# Perfect model unbalanced perfect data - results
-```{r cache=TRUE, echo=FALSE, background='white', fig.height=7, fig.cap="Output from perfect model after calibration"}
-par(mfrow = c(2,2))
-plotTimeSeriesResults(x = out, model = runModel1, observed = obs[,1], error = errorFunction)
-plotTimeSeriesResults(x = out, model = runModel2, observed = nobs[,2], error = errorFunction)
-plotTimeSeriesResults(x = out, model = runModel3, observed = obs[,3], error = errorFunction)
+out <- fitVSEM("run9.RData")
 
+vsemDiagnostics(out,refPars)
 ```
 
 # Model with error balanced perfect data (1000 obs) 
 Remove the root pool by setting allocation to vegetation Av = 1.0
 
-## Likelihood 
-Gaussian 1000 obs for each of NEE, Cv and Cs
 
+# Model with error balanced perfect data (1000 obs) - results
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="Output from error model after calibration"}
 
-```{r include=FALSE}
+## Likelihood: Gaussian 1000 obs for each of NEE, Cv and Cs
 newPars <- refPars$best
-newPars[8]  <- 1.0
-newPars[11] <- 0.0
-parSel = c(1:6, 12)
+names(newPars) = row.names(refPars)
+newPars["Av"]  <- 1.0
+newPars["Cr"] <- 0.0
+parSel = c(defParms, nvar)
+rm(obsSel)
+isLow = NULL
 likelihood <- function(x, sum = TRUE){
   x         <- createMixWithDefaults(x, newPars, parSel)
   predicted <- VSEM(x[1:11], PAR)
   diff      <- c(predicted[,1:3] - obs[,1:3])
-  llValues  <- dnorm(diff, sd = (abs(c(predicted[,1:3])) + 0.0000001) * x[12], log = T) 
+  llValues  <- dnorm(diff, sd = (abs(c(predicted[,1:3])) + 0.0000001) * x[nvar], log = T) 
   if (sum == FALSE) return(llValues)
   else return(sum(llValues))
 }
 
-```
-
-## Prior
-Uniform
-
-```{r include=FALSE}
 prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
 
-```
+out <- fitVSEM("run3.RData")
 
-## Run MCMC
-DREAMzs nChain=20000
-
-```{r include=FALSE, results = "hide", cache=TRUE}
-bayesianSetup <- createBayesianSetup(likelihood, prior,best = newPars[parSel], names = rownames(refPars)[parSel])
-settings = list(iterations = 20000)
-out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "DREAMzs", settings = settings)
-
-## length(unique(out$chain[,1]))
-## pdf("trace.pdf")
-## plot(out)
-## dev.off()
-
-```
-
-# Model with error balanced perfect data (1000 obs) - results
-```{r cache=TRUE, echo=FALSE, background='white', fig.height=7, fig.cap="Output from error model after calibration"}
-par(mfrow = c(2,2))
-plotTimeSeriesResults(x = out, model = runModel1, observed = obs[,1], error = errorFunction)
-plotTimeSeriesResults(x = out, model = runModel2, observed = obs[,2], error = errorFunction)
-plotTimeSeriesResults(x = out, model = runModel3, observed = obs[,3], error = errorFunction)
-
+vsemDiagnostics(out,refPars)
 ```
 
 # Model with error balanced perfect data (6 obs) 
@@ -322,55 +295,27 @@ Remove the root pool by setting allocation to vegetation Av = 1.0
 ## Likelihood 
 Gaussian 6 obs for each of NEE, Cv and Cs
 
-
-```{r include=FALSE}
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="Output from perfect model after calibration"}
 newPars <- refPars$best
-newPars[8]  <- 1.0
-newPars[11] <- 0.0
-parSel = c(1:6, 12)
+names(newPars) = row.names(refPars)
+newPars["Av"]  <- 1.0
+newPars["Cr"] <- 0.0
+parSel = c(defParms, nvar)
 obsSel <- c(1,202,390,550,750,920)
+isLow = 1:3
 ## obsSel = seq(1,366,72)
 likelihood <- function(x, sum = TRUE){
   x         <- createMixWithDefaults(x, newPars, parSel)
   predicted <- VSEM(x[1:11], PAR)
   diff      <- c(predicted[obsSel,1:3] - obs[obsSel,1:3])
-  llValues  <- dnorm(diff, sd = (abs(c(predicted[obsSel,1:3])) + 0.0000001) * x[12], log = T) 
+  llValues  <- dnorm(diff, sd = (abs(c(predicted[obsSel,1:3])) + 0.0000001) * x[nvar], log = T) 
   if (sum == FALSE) return(llValues)
   else return(sum(llValues))
 }
 
-```
-## Prior
-Uniform
-```{r include=FALSE}
 prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
-
-```
-
-## Run MCMC
-DREAMzs nChain=20000
-
-```{r include=FALSE, results = "hide", cache=TRUE}
-bayesianSetup <- createBayesianSetup(likelihood, prior,best = newPars[parSel], names = rownames(refPars)[parSel])
-settings = list(iterations = 20000)
-out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "DREAMzs", settings = settings)
-
-## length(unique(out$chain[,1]))
-## pdf("trace.pdf"
-## plot(out)
-## dev.off()
-
-```
-
-# Model with error balanced perfect data (6 obs) - results
-```{r cache=TRUE, echo=FALSE, background='white', fig.height=7, fig.cap="Output from perfect model after calibration"}
-par(mfrow = c(2,2))
-plotTimeSeriesResults(x = out, model = runModel1, observed = nobs[,1], error = errorFunction)
-plotTimeSeriesResults(x = out, model = runModel2, observed = nobs[,2], error = errorFunction)
-plotTimeSeriesResults(x = out, model = runModel3, observed = nobs[,3], error = errorFunction)
-
-
-
+out <- fitVSEM("run4.RData")
+vsemDiagnostics(out,refPars)
 ```
 
 # Model with error unbalanced perfect data 
@@ -381,293 +326,169 @@ Gaussian 1000 obs for NEE and Cs and only 6 for Cv
 
 ```{r include=FALSE}
 newPars <- refPars$best
-newPars[8]  <- 1.0
-newPars[11] <- 0.0
-parSel = c(1:6, 12)
+names(newPars) = row.names(refPars)
+newPars["Av"]  <- 1.0
+newPars["Cr"] <- 0.0
+parSel = c(defParms, nvar)
 obsSel <- c(1,202,390,550,750,920)
-## obsSel = seq(1,366,72)
+isLow = 2
 likelihood <- function(x, sum = TRUE){
   x         <- createMixWithDefaults(x, newPars, parSel)
   predicted <- VSEM(x[1:11], PAR)
   diff       <- c(predicted[,c(1,3)] - obs[,c(1,3)])
-  llValues1  <- dnorm(diff, sd = (abs(c(predicted[,c(1,3)])) + 0.0000001) * x[12], log = T) 
+  llValues1  <- dnorm(diff, sd = (abs(c(predicted[,c(1,3)])) + 0.0000001) * x[nvar], log = T) 
 
   diff       <- c(predicted[obsSel,2] - obs[obsSel,2])
-  llValues2  <- dnorm(diff, sd = (abs(c(predicted[obsSel,2])) + 0.0000001) * x[12], log = T) 
+  llValues2  <- dnorm(diff, sd = (abs(c(predicted[obsSel,2])) + 0.0000001) * x[nvar], log = T) 
 
   if (sum == FALSE) return(llValues)
   else return(sum(llValues1,llValues2))
 }
 
-```
-
-## Prior
-Uniform
-```{r include=FALSE}
 prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
 
-```
-
-## Run MCMC
-DREAMzs nChain=20000
-
-```{r include=FALSE, results = "hide", cache=TRUE}
-bayesianSetup <- createBayesianSetup(likelihood, prior,best = newPars[parSel], names = rownames(refPars)[parSel])
-settings = list(iterations = 40000)
-out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "DREAMzs", settings = settings)
-
-## length(unique(out$chain[,1]))
-## pdf("trace.pdf")
-## plot(out)
-## dev.off()
+out <- fitVSEM("run5.RData")
+vsemDiagnostics(out,refPars)
 
 ```
 
 # Model with error unbalanced perfect data - results
-![](moderrunbal.pdf)
 
 
 # Perfect model balanced data that has an additive bias 
 Cs obs have an additive error of 4
 
-```{r include=FALSE}
-modobs <- obs
-modobs[,3] <- modobs[,3] + 4.0
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="Output from perfect model after calibration"}
+obs.orig <- obs
+obs[,3] <- obs[,3] + 4.0
 
-```
-## Likelihood 
-Gaussian 1000 obs for each of NEE, Cv and Cs
-
-```{r include=FALSE}
 newPars <- refPars$best
-parSel = c(1:6, 12)
+parSel = c(defParms, nvar)
+rm(obsSel)
+isLow = NULL
 likelihood <- function(x, sum = TRUE){
   x         <- createMixWithDefaults(x, newPars, parSel)
   predicted <- VSEM(x[1:11], PAR)
-  diff      <- c(predicted[,1:3] - modobs[,1:3])
-  llValues  <- dnorm(diff, sd = (abs(c(predicted[,1:3])) + 0.0000001) * x[12], log = T) 
+  diff      <- c(predicted[,1:3] - obs[,1:3])
+  llValues  <- dnorm(diff, sd = (abs(c(predicted[,1:3])) + 0.0000001) * x[nvar], log = T) 
   if (sum == FALSE) return(llValues)
   else return(sum(llValues))
 }
 
-```
-## Prior
-Uniform
-
-```{r include=FALSE}
 prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
 
-```
-## Run MCMC
-DREAMzs nChain=20000
+out <- fitVSEM("run6.RData")
 
-```{r include=FALSE, results = "hide", cache=TRUE}
-bayesianSetup <- createBayesianSetup(likelihood, prior,best = newPars[parSel], names = rownames(refPars)[parSel])
-settings = list(iterations = 20000)
-out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "DREAMzs", settings = settings)
+vsemDiagnostics(out,refPars)
 
-## length(unique(out$chain[,1]))
-## pdf("trace.pdf")
-## plot(out)
-## dev.off()
-
-```
-
-# Perfect model balanced data that has an additive bias - results 
-
-```{r include=FALSE, cache=TRUE}
-runModel1 <- function(par){
-  x = createMixWithDefaults(par, newPars, parSel)
-  predicted <- VSEM(x[1:11], PAR)
-  return(predicted[,1])
-}
-runModel2 <- function(par){
-  x = createMixWithDefaults(par, newPars, parSel)
-  predicted <- VSEM(x[1:11], PAR)
-  return(predicted[,2])
-}
-runModel3 <- function(par){
-  x = createMixWithDefaults(par, newPars, parSel)
-  predicted <- VSEM(x[1:11], PAR)
-  return(predicted[,3])
-}
-
-errorFunction <- function(mean, par) rnorm(length(mean), mean = mean, sd = abs(mean)*par[7])
-
-```
-
-```{r cache=TRUE, echo=FALSE, background='white', fig.height=7, fig.cap="Output from perfect model after calibration"}
-par(mfrow = c(2,2))
-plotTimeSeriesResults(x = out, model = runModel1, observed = obs[,1], error = errorFunction)
-plotTimeSeriesResults(x = out, model = runModel2, observed = obs[,2], error = errorFunction)
-plotTimeSeriesResults(x = out, model = runModel3, observed = obs[,3], error = errorFunction)
-
+obs <- obs.orig
 ```
 
 # Perfect model unbalanced data that has an additive bias
 Cs obs have an additive error of 4
 
 ```{r include=FALSE}
-modobs <- obs
-## modobs[,1] <- modobs[,1]*0.8
-modobs[,3] <- modobs[,3] + 4.0
+obs <- obs.orig
+obs[,3] <- obs[,3] + 4.0
 
-```
-
-## Likelihood 
-Gaussian 1000 obs for NEE and Cs and only 6 for Cv
-
-```{r include=FALSE}
 newPars <- refPars$best
-parSel = c(1:6, 12)
+parSel = c(defParms, nvar)
 obsSel <- c(1,202,390,550,750,920)
+isLow = 2
 likelihood <- function(x, sum = TRUE){
   x         <- createMixWithDefaults(x, newPars, parSel)
-  predicted <- VSEM(x[1:11], PAR)
-  diff       <- c(predicted[,c(1,3)] - modobs[,c(1,3)])
-  llValues1  <- dnorm(diff, sd = (abs(c(predicted[,c(1,3)])) + 0.0000001) * x[12], log = T) 
+  predicted <- VSEM(x[1:(nvar-1)], PAR)
+  diff       <- c(predicted[,c(1,3)] - obs[,c(1,3)])
+  llValues1  <- dnorm(diff, sd = (abs(c(predicted[,c(1,3)])) + 0.0000001) * x[nvar], log = T) 
 
-  diff       <- c(predicted[obsSel,2] - modobs[obsSel,2])
-  llValues2  <- dnorm(diff, sd = (abs(c(predicted[obsSel,2])) + 0.0000001) * x[12], log = T) 
+  diff       <- c(predicted[obsSel,2] - obs[obsSel,2])
+  llValues2  <- dnorm(diff, sd = (abs(c(predicted[obsSel,2])) + 0.0000001) * x[nvar], log = T) 
 
   if (sum == FALSE) return(llValues)
   else return(sum(llValues1,llValues2))
 }
 
-```
-## Prior
-Uniform
-
-```{r include=FALSE}
 prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
 
-```
+out <- fitVSEM("run7.RData")
 
-## Run MCMC
-DREAMzs nChain=20000
+vsemDiagnostics(out,refPars)
 
-```{r include=FALSE, results = "hide", cache=TRUE}
-bayesianSetup <- createBayesianSetup(likelihood, prior,best = newPars[parSel], names = rownames(refPars)[parSel])
-settings = list(iterations = 20000)
-out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "DREAMzs", settings = settings)
-
-## length(unique(out$chain[,1]))
-## pdf("trace.pdf")
-## plot(out)
-## dev.off()
-
-```
-# Perfect model unbalanced data that has an additive bias - results
-
-```{r include=FALSE, cache=TRUE}
-runModel1 <- function(par){
-  x = createMixWithDefaults(par, newPars, parSel)
-  predicted <- VSEM(x[1:11], PAR)
-  return(predicted[,1])
-}
-runModel2 <- function(par){
-  x = createMixWithDefaults(par, newPars, parSel)
-  predicted <- VSEM(x[1:11], PAR)
-  return(predicted[,2])
-}
-runModel3 <- function(par){
-  x = createMixWithDefaults(par, newPars, parSel)
-  predicted <- VSEM(x[1:11], PAR)
-  return(predicted[,3])
-}
-
-errorFunction <- function(mean, par) rnorm(length(mean), mean = mean, sd = abs(mean)*par[7])
+obs <- obs.orig
 
 ```
 
-![](TG15-clean_files/figure-beamer/unnamed-chunk-42-1.pdf)
 
-
-# Perfect model unbalanced data that has an additive bias with systmatic bias parameter
+# Perfect model low-volume data that has an additive bias
 Cs obs have an additive error of 4
 
 ```{r include=FALSE}
-modobs <- obs
-## modobs[,1] <- modobs[,1]*0.8
-modobs[,3] <- modobs[,3] + 4.0
+obs <- obs.orig
+obs[,3] <- obs[,3] + 4.0
+
+newPars <- refPars$best
+parSel = c(defParms, nvar)
+obsSel <- c(1,202,390,550,750,920)
+isLow = 1:3
+likelihood <- function(x, sum = TRUE){
+  x         <- createMixWithDefaults(x, newPars, parSel)
+  predicted <- VSEM(x[1:(nvar-1)], PAR)
+
+  diff       <- c(predicted[obsSel,] - obs[obsSel,])
+  llValues  <- dnorm(diff, sd = (abs(c(predicted[obsSel,])) + 0.0000001) * x[nvar], log = T) 
+
+  if (sum == FALSE) return(llValues)
+  else return(sum(llValues))
+}
+
+prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
+
+out <- fitVSEM("run10.RData")
+
+vsemDiagnostics(out,refPars)
+
+obs <- obs.orig
 
 ```
 
-## Likelihood 
+# Perfect model unbalanced data that has an additive bias with systmatic bias parameter
+Cs obs have an additive error of 4
 Gaussian 1000 obs for NEE and Cs and only 6 for Cv
 
 ```{r include=FALSE}
+obs <- obs.orig
+obs[,3] <- obs[,3] + 4.0
+
 addPars <- refPars
-addPars[13,] <- c(6.0, 0.0, 12.0)
-## addPars[13,] <- c(1.0, 0.1, 5.0)
+addPars[nvar+1,] <- c(4.0, 0.0, 12.0)
 row.names(addPars)<-c(row.names(refPars),"EsysNEE")
 newPars <- addPars$best
-parSel = c(1:6, 12,13)
+parSel = c(defParms, nvar,nvar+1)
 obsSel <- c(1,202,390,550,750,920)
+isLow = 2
 likelihood <- function(x, sum = TRUE){
   x         <- createMixWithDefaults(x, newPars, parSel)
-  predicted <- VSEM(x[1:11], PAR)
-  ## modobs[,1]<-modobs[,1]*x[13]
-  modobs[,3]<-modobs[,3]+(x[13]-6.0)
+  predicted <- VSEM(x[1:(nvar-1)], PAR)
+#  modobs[,3]<-modobs[,3]+(x[nvar+1]-6.0)
+  predicted[,3] <- predicted[,3] + x[nvar+1]
+  
+  diff       <- c(predicted[,c(1,3)] - obs[,c(1,3)])
+  llValues1  <- dnorm(diff, sd = (abs(c(predicted[,c(1,3)])) + 0.0000001) * x[nvar], log = T) 
 
-  diff       <- c(predicted[,c(1,3)] - modobs[,c(1,3)])
-  llValues1  <- dnorm(diff, sd = (abs(c(predicted[,c(1,3)])) + 0.0000001) * x[12], log = T) 
-
-  diff       <- c(predicted[obsSel,2] - modobs[obsSel,2])
-  ## diff       <- c(predicted[,2] - modobs[,2])
-  llValues2  <- dnorm(diff, sd = (abs(c(predicted[obsSel,2])) + 0.0000001) * x[12], log = T) 
+  diff       <- c(predicted[obsSel,2] - obs[obsSel,2])
+  llValues2  <- dnorm(diff, sd = (abs(c(predicted[obsSel,2])) + 0.0000001) * x[nvar], log = T) 
 
   if (sum == FALSE) return(llValues)
   else return(sum(llValues1,llValues2))
 }
 
-```
-## Prior
-Uniform
 
-```{r include=FALSE}
 prior         <- createUniformPrior(lower = addPars$lower[parSel], upper = addPars$upper[parSel])
 
-```
-
-## Run MCMC
-DREAMzs nChain=20000
-
-```{r include=FALSE, results = "hide", cache=TRUE}
-bayesianSetup <- createBayesianSetup(likelihood, prior,best = newPars[parSel], names = rownames(addPars)[parSel])
-settings = list(iterations = 20000)
-out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "DREAMzs", settings = settings)
-
-## length(unique(out$chain[,1]))
-## pdf("trace.pdf")
-## plot(out)
-## dev.off()
+out <- fitVSEM("run8.RData")
+vsemDiagnostics(out,addPars)
 
 ```
-# Perfect model unbalanced data that has an additive bias with systmatic bias parameter - results
-
-```{r include=FALSE, cache=TRUE}
-runModel1 <- function(par){
-  x = createMixWithDefaults(par, newPars, parSel)
-  predicted <- VSEM(x[1:11], PAR)
-  return(predicted[,1])
-}
-runModel2 <- function(par){
-  x = createMixWithDefaults(par, newPars, parSel)
-  predicted <- VSEM(x[1:11], PAR)
-  return(predicted[,2])
-}
-runModel3 <- function(par){
-  x = createMixWithDefaults(par, newPars, parSel)
-  predicted <- VSEM(x[1:11], PAR)
-  return(predicted[,3])
-}
-
-errorFunction <- function(mean, par) rnorm(length(mean), mean = mean, sd = abs(mean)*par[7])
-
-```
-
-![](TG15-clean_files/figure-beamer/unnamed-chunk-48-1.pdf)
 
 
 # Short term ideas
