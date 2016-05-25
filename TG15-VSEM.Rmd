@@ -143,7 +143,7 @@ plotTimeSeriesResults <- function(x, model, observed, error = NULL, plotResidual
 fitVSEM <- function(fname){
   if(!file.exists(fname)|CLEAN.BUILD){
     bayesianSetup <- createBayesianSetup(likelihood, prior,best = newPars[parSel], names = rownames(refPars)[parSel])
-    settings = list(iterations = 10000)
+    settings = list(iterations = 20000)
     out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "DREAMzs", settings = settings)
     save(out,file=fname)
   } else {
@@ -154,7 +154,7 @@ fitVSEM <- function(fname){
 
 runModel <- function(par,pool){
   x = createMixWithDefaults(par, newPars, parSel)
-  predicted <- VSEM(x[1:11], PAR)
+  predicted <- VSEM(x[1:(nvar-1)], PAR)
   return(predicted[,pool])
 }
 
@@ -177,7 +177,8 @@ vsemDiagnostics <- function(out,refPars){
   ## thin
   nmc = nrow(out$chain[[1]])
   out$chain <- window(out$chain,start=nmc/2,thin=(nmc/2)/5000)
-
+  ## could replace above with getSample?
+  
   par(mfrow = c(2,2))
   for(i in 1:3){
     myObs = obs[,i]
@@ -197,11 +198,31 @@ vsemDiagnostics <- function(out,refPars){
     correlationPlot(out)
   }
 }
+
+vsemScore <- function(out){
+  parMatrix = getSample(out)
+  skill = matrix(NA,3,2)
+  for(pool in 1:3){
+    myModel <- function(x) runModel(x,pool)
+    pred = getPredictiveDistribution(parMatrix, model = myModel, thin = 100)
+    bias = mean(apply(pred,1,function(y){mean(referenceData[,pool]-y)}))
+    rmse = mean(apply(pred,1,function(y){sqrt(mean((referenceData[,pool]-y)^2))}))
+    skill[pool,] <- c(rmse,bias)/mean(referenceData[,pool])
+  }
+  row.names(skill) <- c("NEE","Cv","Cs")
+  colnames(skill) <- c("rmse","bias")
+  return(skill)
+}
+
 ```
 
 # Results 
 
 ## Identifying model fit problems
+
+```{r include=FALSE}
+skill <- list()
+```
 
 ### Perfect model balanced perfect data 
 Gaussian 1000 obs for each of NEE, Cv and Cs
@@ -222,11 +243,12 @@ likelihood <- function(x, sum = TRUE){
 
 prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
 out1 <- fitVSEM("run1.RData")
-vsemDiagnostics(out1,refPars)
 ```
 
 ```{r echo=FALSE, background='white', fig.height=7, fig.cap="Perfect model, perfect data"}
 vsemDiagnostics(out1,refPars)
+skill[[1]] <-vsemScore(out1) 
+knitr::kable(skill[[1]])
 ```
 
 ### Perfect model unbalanced perfect data 
@@ -256,8 +278,10 @@ prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPa
 out2 <- fitVSEM("run2.RData")
 ```
 
-```{r include=FALSE,echo=FALSE, background='white', fig.height=7, fig.cap="Perfect model, unbalanced data"}
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="Perfect model, unbalanced data"}
 vsemDiagnostics(out2,refPars)
+skill[[2]] <-vsemScore(out2) 
+knitr::kable(skill[[2]])
 ```
 
 ### Perfect model, low-volume perfect data 
@@ -284,8 +308,10 @@ prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPa
 out9 <- fitVSEM("run9.RData")
 ```
 
-```{r echo=FALSE, background='white', fig.height=7, fig.cap="Output from perfect model after calibration"}
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="Perfect model, low volume data"}
 vsemDiagnostics(out9,refPars)
+skill[[3]] <-vsemScore(out9) 
+knitr::kable(skill[[3]])
 ```
 
 ### Model with error balanced perfect data (1000 obs) 
@@ -298,7 +324,7 @@ newPars <- refPars$best
 names(newPars) = row.names(refPars)
 newPars["Av"]  <- 1.0
 newPars["Cr"] <- 0.0
-parSel = c(defParms, nvar)
+parSel = c(defParms[-which(names(newPars)%in% c("Av","Cr","tauR"))], nvar)
 rm(obsSel)
 isLow = NULL
 likelihood <- function(x, sum = TRUE){
@@ -317,6 +343,8 @@ out3 <- fitVSEM("run3.RData")
 
 ```{r echo=FALSE, background='white', fig.height=7, fig.cap="Output from error model after calibration"}
 vsemDiagnostics(out3,refPars)
+skill[[4]] <-vsemScore(out3) 
+knitr::kable(skill[[4]])
 ```
 
 ### Model with error balanced perfect data (6 obs) 
@@ -328,7 +356,7 @@ newPars <- refPars$best
 names(newPars) = row.names(refPars)
 newPars["Av"]  <- 1.0
 newPars["Cr"] <- 0.0
-parSel = c(defParms, nvar)
+parSel = c(defParms[-which(names(newPars)%in% c("Av","Cr","tauR"))], nvar)
 obsSel <- c(1,202,390,550,750,920)
 isLow = 1:3
 ## obsSel = seq(1,366,72)
@@ -347,6 +375,8 @@ out4 <- fitVSEM("run4.RData")
 
 ```{r echo=FALSE, background='white', fig.height=7, fig.cap="Output from perfect model after calibration"}
 vsemDiagnostics(out4,refPars)
+skill[[5]] <-vsemScore(out4) 
+knitr::kable(skill[[5]])
 ```
 
 ### Model with error unbalanced perfect data 
@@ -358,7 +388,7 @@ newPars <- refPars$best
 names(newPars) = row.names(refPars)
 newPars["Av"]  <- 1.0
 newPars["Cr"] <- 0.0
-parSel = c(defParms, nvar)
+parSel = c(defParms[-which(names(newPars)%in% c("Av","Cr","tauR"))], nvar)
 obsSel <- c(1,202,390,550,750,920)
 isLow = 2
 likelihood <- function(x, sum = TRUE){
@@ -381,6 +411,8 @@ out5 <- fitVSEM("run5.RData")
 
 ```{r echo=FALSE, background='white', fig.height=7, fig.cap="Model error, unbalanced data"}
 vsemDiagnostics(out5,refPars)
+skill[[6]] <-vsemScore(out5) 
+knitr::kable(skill[[6]])
 ```
 
 ### Perfect model balanced data that has an additive bias 
@@ -411,6 +443,8 @@ out6 <- fitVSEM("run6.RData")
 ```{r echo=FALSE, background='white', fig.height=7, fig.cap="Perfect model, biased data"}
 vsemDiagnostics(out6,refPars)
 obs <- obs.orig
+skill[[7]] <-vsemScore(out6) 
+knitr::kable(skill[[7]])
 ```
 
 ### Perfect model unbalanced data that has an additive bias
@@ -444,6 +478,8 @@ out7 <- fitVSEM("run7.RData")
 
 ```{r echo=FALSE, background='white', fig.height=7, fig.cap="Biased, unbalanced data"}
 vsemDiagnostics(out7,refPars)
+skill[[8]] <-vsemScore(out7) 
+knitr::kable(skill[[8]])
 obs <- obs.orig
 ```
 
@@ -476,8 +512,18 @@ out10 <- fitVSEM("run10.RData")
 
 ```{r echo=FALSE, background='white', fig.height=7, fig.cap="Biased low-volume data"}
 vsemDiagnostics(out10,refPars)
+skill[[9]] <-vsemScore(out10) 
+knitr::kable(skill[[9]])
 obs <- obs.orig
 ```
+
+### Summary table
+
+## note: in root 
+
+| Experiment | Model | Data bias | Data volume | Model RMSE | Model Bias |
+|:-----------|------:|----------:|------------:|-----------:|-----------:|
+
 
 ## Addressing errors
 
@@ -520,6 +566,7 @@ out8 <- fitVSEM("run8.RData")
 
 ```{r echo=FALSE, background='white', fig.height=7, fig.cap="Biased, unbalanced data; Additive bias likelihood"}
 vsemDiagnostics(out8,addPars)
+obs <- obs.orig
 ```
 
 
