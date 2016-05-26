@@ -3,148 +3,52 @@ title: "Experiments for TG15 with VSEM"
 author: "David Cameron and Mike Dietze"
 date: '`r Sys.Date()`'
 output:
-  slidy_presentation: default
+#  slidy_presentation: default
   html_document: default
   pdf_document:
     fig_caption: yes
     number_sections: yes
     toc: yes
-  beamer_presentation:
-    includes:
-      in_header: mystyles.sty
+#  beamer_presentation:
+#    includes:
+#      in_header: mystyles.sty
   word_document: default
 ---
 
 ```{r include=FALSE}
+### SETTINGS
 library(BayesianTools)
 CLEAN.BUILD = FALSE
 PLOT.DIAGNOSTICS = TRUE
 defParms = 1:9
 ```
 
-```{r include=FALSE}
-plotTimeSeriesResults <- function(x, model, observed, error = NULL, plotResiduals = T, start = 1,pool=1){
-  
-  if(inherits(x,"bayesianOutput")) parMatrix = getSample(x, start = start)
-  else if (class(sampler) == "matrix") parMatrix = sampler
-  else stop("wrong type give to variable sampler")
-  
-  myModel <- function(x) model(x,pool)
-  pred <- getPredictiveIntervals(parMatrix = parMatrix, model = myModel, thin = 1000, quantiles = c(0.025, 0.5, 0.975), error = error)
-  
-  plotTimeSeries(observed = observed, predicted = pred[2,], confidenceBand = pred[c(1,3),])
-  lines(pred[2,],col="red",lwd=2)
-}
+# Introduction
 
-```
-# The TG15 issue
-
-# What is the effective information content (IC) of observations
+What is the effective information content (IC) of observations
  - One eddy covariance tower with 17000 measurements count this as n = 1 or n = 17000 obs?
  - Aggregate 5 min data to 10 min retain essentially same IC but sample size halved!
  - Spectral analysis of eddy covariance NEE data two peaks: annual(seasonal) and diurnal
  - Often assume in BC that each data-point provides independent information
  - If biases in data or model errors are not independent
 
-# To-date solutions generally ad hoc and/or arbitrary
+ To-date solutions generally ad hoc and/or arbitrary
   - Ignore but then models over-fitted and uncertainty underestimated
   - Apply arbitrary weights to rebalance influence of data in BC 
   - Thin the number of eddy covariance obs 
    - throwing away useful information
 
-# Thin observations 6 obs
-
-# Artificial experiments
+ Artificial experiments
  - calibration data model's own output to control:
   1) model and data perfection/imperfection
   2) balance/unbalance of data in the calibration
  - developed a very simple ecosystem model (VSEM)  
 
-# VSEM
-## Photosynthesis
+# Methods
 
-\begin{align}
-GPP &= PAR \times LUE \times (1 - \exp^{(-KEXT \times LAI)})\\
-NPP &= (1-GAMMA) \times GPP
-\end{align}
+## Computational experiments
 
- - PAR Photosynthetically active radiation
- - LUE Light use efficiency 
- - KEXT Beer's law light extinction coeff
-
-# VSEM
-## C-state equations
-\begin{align}
-\frac{dC_v}{dt}  &= A_v \times NPP &- \frac{C_v}{\tau_v} \\ 
-\frac{dC_r}{dt}  &= (1.0-A_v) \times NPP &- \frac{C_r}{\tau_r}\\
-\frac{dC_s}{dt}  &= \frac{C_r}{\tau_r} + \frac{C_v}{\tau_v} &- \frac{C_s}{\tau_s}
-\end{align}
- - $C_v$, $C_r$ and $C_s$ : Carbon in vegetation, root and soil pools 
-
-```{r include=FALSE}
-## HELPER FUNCTIONS
-
-fitVSEM <- function(fname){
-  if(!file.exists(fname)|CLEAN.BUILD){
-    bayesianSetup <- createBayesianSetup(likelihood, prior,best = newPars[parSel], names = rownames(refPars)[parSel])
-    settings = list(iterations = 10000)
-    out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "DREAMzs", settings = settings)
-    save(out,file=fname)
-  } else {
-    load(fname)
-  }
-  invisible(out)
-}
-
-runModel <- function(par,pool){
-  x = createMixWithDefaults(par, newPars, parSel)
-  predicted <- VSEM(x[1:11], PAR)
-  return(predicted[,pool])
-}
-
-errorFunction <- function(mean, par) rnorm(length(mean), mean = mean, sd = abs(mean)*par[length(par)])
-
-plotPosteriors <- function(out,refPars){
-  np = length(parSel)  ## number of parameters fit
-  outM <- as.matrix(out$chain)[,1:np]
-  colnames(outM) <- rownames(refPars)[parSel]
-  for(i in 1:np){
-    true = refPars[parSel[i],1]
-    d = density(outM[,i])
-    xlim = range(c(d$x,true))
-    plot(d,xlim=xlim,main=colnames(outM)[i])
-    abline(v=true,col=2,lwd=3)
-  }
-}
-
-vsemDiagnostics <- function(out,refPars){
-  ## thin
-  nmc = nrow(out$chain[[1]])
-  out$chain <- window(out$chain,start=nmc/2,thin=(nmc/2)/5000)
-
-  par(mfrow = c(2,2))
-  for(i in 1:3){
-    myObs = obs[,i]
-    if(exists("obsSel") & i %in% isLow) myObs[-obsSel] <- NA
-    plotTimeSeriesResults(x = out, model = runModel, observed = myObs, error = errorFunction,pool=i)
-    lines(referenceData[,i],col=3,lwd=1)
-  }
-  
-  if(PLOT.DIAGNOSTICS){
-    
-    #plot(out$chain)
-    
-    par(mfrow=c(3,2))
-    plotPosteriors(out,refPars)
-    
-    par(mfrow=c(1,1))
-    correlationPlot(out)
-  }
-}
-```
-
-
-# Idealised experiment with virtual data from VSEM
+### Idealised experiment with virtual data from VSEM
  - Run model with a parameter vector output assign as 'truth'
  - Add noise to create idealised observations
 
@@ -179,10 +83,151 @@ if(!file.exists("obs.RData")|CLEAN.BUILD){
 }
 ```
 
-# Perfect model balanced perfect data 
+### Identifying the issue
+
+Variables:
+ - Amount of data: high but balanced, low but balanced, unbalanced
+ - Biases: perfect model, data bias, model structural error
+ 
+Run a factorial experiment exploring all 9 combinations
+
+Assess error and bias in model parameters, initial conditions, and  outputs. Because this is a simulated experiment we can compare to a known set of 'true' values.
+
+### Assessing approaches 
+
+Alternative likelihoods
+- IID
+- AR1
+- additive bias
+
+## VSEM
+
+Photosynthesis
+
+\begin{align}
+NPP &= PAR \times LUE \times (1 - \exp^{(-KEXT \times C_v)})\\
+\end{align}
+
+ - PAR Photosynthetically active radiation
+ - LUE Light use efficiency of NPP (Ra implicit) 
+ - KEXT Beer's law light extinction coeff
+ - $C_v$ Vegetation carbon
+
+C-state equations
+\begin{align}
+\frac{dC_v}{dt}  &= A_v \times NPP &- \frac{C_v}{\tau_v} \\ 
+\frac{dC_r}{dt}  &= (1.0-A_v) \times NPP &- \frac{C_r}{\tau_r}\\
+\frac{dC_s}{dt}  &= \frac{C_r}{\tau_r} + \frac{C_v}{\tau_v} &- \frac{C_s}{\tau_s}
+\end{align}
+ - $C_v$, $C_r$ and $C_s$ : Carbon in vegetation, root and soil pools 
+
+## Bayesian Calibration
+ - Fit model to data using BayesianTools R package
+
+```{r include=FALSE}
+## HELPER FUNCTIONS
+
+plotTimeSeriesResults <- function(x, model, observed, error = NULL, plotResiduals = T, start = 1,pool=1){
+  
+  if(inherits(x,"bayesianOutput")) parMatrix = getSample(x, start = start)
+  else if (class(sampler) == "matrix") parMatrix = sampler
+  else stop("wrong type give to variable sampler")
+  
+  myModel <- function(x) model(x,pool)
+  pred <- getPredictiveIntervals(parMatrix = parMatrix, model = myModel, thin = 1000, quantiles = c(0.025, 0.5, 0.975), error = error)
+  
+  plotTimeSeries(observed = observed, predicted = pred[2,], confidenceBand = pred[c(1,3),])
+  lines(pred[2,],col="red",lwd=2)
+}
+
+fitVSEM <- function(fname){
+  if(!file.exists(fname)|CLEAN.BUILD){
+    bayesianSetup <- createBayesianSetup(likelihood, prior,best = newPars[parSel], names = rownames(refPars)[parSel])
+    settings = list(iterations = 20000)
+    out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "DREAMzs", settings = settings)
+    save(out,file=fname)
+  } else {
+    load(fname)
+  }
+  invisible(out)
+}
+
+runModel <- function(par,pool){
+  x = createMixWithDefaults(par, newPars, parSel)
+  predicted <- VSEM(x[1:(nvar-1)], PAR)
+  return(predicted[,pool])
+}
+
+errorFunction <- function(mean, par) rnorm(length(mean), mean = mean, sd = abs(mean)*par[length(par)])
+
+plotPosteriors <- function(out,refPars){
+  np = length(parSel)  ## number of parameters fit
+  outM <- as.matrix(out$chain)[,1:np]
+  colnames(outM) <- rownames(refPars)[parSel]
+  for(i in 1:np){
+    true = refPars[parSel[i],1]
+    d = density(outM[,i])
+    xlim = range(c(d$x,true))
+    plot(d,xlim=xlim,main=colnames(outM)[i])
+    abline(v=true,col=2,lwd=3)
+  }
+}
+
+vsemDiagnostics <- function(out,refPars){
+  ## thin
+  nmc = nrow(out$chain[[1]])
+  out$chain <- window(out$chain,start=nmc/2,thin=(nmc/2)/5000)
+  ## could replace above with getSample?
+  
+  par(mfrow = c(2,2))
+  for(i in 1:3){
+    myObs = obs[,i]
+    if(exists("obsSel") & i %in% isLow) myObs[-obsSel] <- NA
+    plotTimeSeriesResults(x = out, model = runModel, observed = myObs, error = errorFunction,pool=i)
+    lines(referenceData[,i],col=3,lwd=1)
+  }
+  
+  if(PLOT.DIAGNOSTICS){
+    
+    #plot(out$chain)
+    
+    par(mfrow=c(3,2))
+    plotPosteriors(out,refPars)
+    
+    par(mfrow=c(1,1))
+    correlationPlot(out)
+  }
+}
+
+vsemScore <- function(out){
+  parMatrix = getSample(out)
+  skill = matrix(NA,3,2)
+  for(pool in 1:3){
+    myModel <- function(x) runModel(x,pool)
+    pred = getPredictiveDistribution(parMatrix, model = myModel, thin = 100)
+    bias = mean(apply(pred,1,function(y){mean(referenceData[,pool]-y)}))
+    rmse = mean(apply(pred,1,function(y){sqrt(mean((referenceData[,pool]-y)^2))}))
+    skill[pool,] <- c(rmse,bias)/mean(referenceData[,pool])
+  }
+  row.names(skill) <- c("NEE","Cv","Cs")
+  colnames(skill) <- c("rmse","bias")
+  return(skill)
+}
+
+```
+
+# Results 
+
+## Identifying model fit problems
+
+```{r include=FALSE}
+skill <- list()
+```
+
+### Perfect model balanced perfect data 
 Gaussian 1000 obs for each of NEE, Cv and Cs
 
-```{r echo=FALSE, background='white', fig.height=7, fig.cap="Output from perfect model after calibration"}
+```{r include=FALSE}
 newPars <- refPars$best
 parSel = c(defParms, nvar)
 rm(obsSel)
@@ -197,15 +242,19 @@ likelihood <- function(x, sum = TRUE){
 }
 
 prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
-out <- fitVSEM("run1.RData")
-vsemDiagnostics(out,refPars)
+out1 <- fitVSEM("run1.RData")
 ```
 
-# Perfect model unbalanced perfect data 
-## Likelihood 
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="Perfect model, perfect data"}
+vsemDiagnostics(out1,refPars)
+skill[[1]] <-vsemScore(out1) 
+knitr::kable(skill[[1]])
+```
+
+### Perfect model unbalanced perfect data 
 Gaussian 1000 obs for NEE and Cs and only 6 for Cv
 
-```{r include=FALSE,echo=FALSE, background='white', fig.height=7, fig.cap="Output from perfect model after calibration"}
+```{r include=FALSE}
 newPars <- refPars$best
 parSel = c(defParms, nvar)
 obsSel <- c(1,202,390,550,750,920)
@@ -226,16 +275,19 @@ likelihood <- function(x, sum = TRUE){
 ## Prior
 prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
 
-out <- fitVSEM("run2.RData")
-
-vsemDiagnostics(out,refPars)
+out2 <- fitVSEM("run2.RData")
 ```
 
-# Perfect model, low-volume of perfect data 
-## Likelihood 
-Gaussian 1000 obs for NEE and Cs and only 6 for Cv
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="Perfect model, unbalanced data"}
+vsemDiagnostics(out2,refPars)
+skill[[2]] <-vsemScore(out2) 
+knitr::kable(skill[[2]])
+```
 
-```{r include=FALSE,echo=FALSE, background='white', fig.height=7, fig.cap="Output from perfect model after calibration"}
+### Perfect model, low-volume perfect data 
+Gaussian, only 6 observations for NEE. Cs, and Cv
+
+```{r include=FALSE}
 newPars <- refPars$best
 parSel = c(defParms, nvar)
 obsSel <- c(1,202,390,550,750,920)
@@ -253,16 +305,18 @@ likelihood <- function(x, sum = TRUE){
 ## Prior
 prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
 
-out <- fitVSEM("run9.RData")
-
-vsemDiagnostics(out,refPars)
+out9 <- fitVSEM("run9.RData")
 ```
 
-# Model with error balanced perfect data (1000 obs) 
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="Perfect model, low volume data"}
+vsemDiagnostics(out9,refPars)
+skill[[3]] <-vsemScore(out9) 
+knitr::kable(skill[[3]])
+```
+
+### Model with error balanced perfect data (1000 obs) 
 Remove the root pool by setting allocation to vegetation Av = 1.0
 
-
-# Model with error balanced perfect data (1000 obs) - results
 ```{r echo=FALSE, background='white', fig.height=7, fig.cap="Output from error model after calibration"}
 
 ## Likelihood: Gaussian 1000 obs for each of NEE, Cv and Cs
@@ -270,7 +324,7 @@ newPars <- refPars$best
 names(newPars) = row.names(refPars)
 newPars["Av"]  <- 1.0
 newPars["Cr"] <- 0.0
-parSel = c(defParms, nvar)
+parSel = c(defParms[-which(names(newPars)%in% c("Av","Cr","tauR"))], nvar)
 rm(obsSel)
 isLow = NULL
 likelihood <- function(x, sum = TRUE){
@@ -284,23 +338,25 @@ likelihood <- function(x, sum = TRUE){
 
 prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
 
-out <- fitVSEM("run3.RData")
-
-vsemDiagnostics(out,refPars)
+out3 <- fitVSEM("run3.RData")
 ```
 
-# Model with error balanced perfect data (6 obs) 
-Remove the root pool by setting allocation to vegetation Av = 1.0
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="Output from error model after calibration"}
+vsemDiagnostics(out3,refPars)
+skill[[4]] <-vsemScore(out3) 
+knitr::kable(skill[[4]])
+```
 
-## Likelihood 
+### Model with error balanced perfect data (6 obs) 
+Remove the root pool by setting allocation to vegetation Av = 1.0
 Gaussian 6 obs for each of NEE, Cv and Cs
 
-```{r echo=FALSE, background='white', fig.height=7, fig.cap="Output from perfect model after calibration"}
+```{r include=FALSE}
 newPars <- refPars$best
 names(newPars) = row.names(refPars)
 newPars["Av"]  <- 1.0
 newPars["Cr"] <- 0.0
-parSel = c(defParms, nvar)
+parSel = c(defParms[-which(names(newPars)%in% c("Av","Cr","tauR"))], nvar)
 obsSel <- c(1,202,390,550,750,920)
 isLow = 1:3
 ## obsSel = seq(1,366,72)
@@ -314,14 +370,17 @@ likelihood <- function(x, sum = TRUE){
 }
 
 prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
-out <- fitVSEM("run4.RData")
-vsemDiagnostics(out,refPars)
+out4 <- fitVSEM("run4.RData")
 ```
 
-# Model with error unbalanced perfect data 
-Remove the root pool by setting allocation to vegetation Av = 1.0
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="Output from perfect model after calibration"}
+vsemDiagnostics(out4,refPars)
+skill[[5]] <-vsemScore(out4) 
+knitr::kable(skill[[5]])
+```
 
-## Likelihood 
+### Model with error unbalanced perfect data 
+Remove the root pool by setting allocation to vegetation Av = 1.0
 Gaussian 1000 obs for NEE and Cs and only 6 for Cv
 
 ```{r include=FALSE}
@@ -329,7 +388,7 @@ newPars <- refPars$best
 names(newPars) = row.names(refPars)
 newPars["Av"]  <- 1.0
 newPars["Cr"] <- 0.0
-parSel = c(defParms, nvar)
+parSel = c(defParms[-which(names(newPars)%in% c("Av","Cr","tauR"))], nvar)
 obsSel <- c(1,202,390,550,750,920)
 isLow = 2
 likelihood <- function(x, sum = TRUE){
@@ -347,18 +406,19 @@ likelihood <- function(x, sum = TRUE){
 
 prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
 
-out <- fitVSEM("run5.RData")
-vsemDiagnostics(out,refPars)
-
+out5 <- fitVSEM("run5.RData")
 ```
 
-# Model with error unbalanced perfect data - results
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="Model error, unbalanced data"}
+vsemDiagnostics(out5,refPars)
+skill[[6]] <-vsemScore(out5) 
+knitr::kable(skill[[6]])
+```
 
-
-# Perfect model balanced data that has an additive bias 
+### Perfect model balanced data that has an additive bias 
 Cs obs have an additive error of 4
 
-```{r echo=FALSE, background='white', fig.height=7, fig.cap="Output from perfect model after calibration"}
+```{r include=FALSE}
 obs.orig <- obs
 obs[,3] <- obs[,3] + 4.0
 
@@ -377,14 +437,17 @@ likelihood <- function(x, sum = TRUE){
 
 prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
 
-out <- fitVSEM("run6.RData")
-
-vsemDiagnostics(out,refPars)
-
-obs <- obs.orig
+out6 <- fitVSEM("run6.RData")
 ```
 
-# Perfect model unbalanced data that has an additive bias
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="Perfect model, biased data"}
+vsemDiagnostics(out6,refPars)
+obs <- obs.orig
+skill[[7]] <-vsemScore(out6) 
+knitr::kable(skill[[7]])
+```
+
+### Perfect model unbalanced data that has an additive bias
 Cs obs have an additive error of 4
 
 ```{r include=FALSE}
@@ -410,16 +473,17 @@ likelihood <- function(x, sum = TRUE){
 
 prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
 
-out <- fitVSEM("run7.RData")
-
-vsemDiagnostics(out,refPars)
-
-obs <- obs.orig
-
+out7 <- fitVSEM("run7.RData")
 ```
 
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="Biased, unbalanced data"}
+vsemDiagnostics(out7,refPars)
+skill[[8]] <-vsemScore(out7) 
+knitr::kable(skill[[8]])
+obs <- obs.orig
+```
 
-# Perfect model low-volume data that has an additive bias
+### Perfect model low-volume data that has an additive bias
 Cs obs have an additive error of 4
 
 ```{r include=FALSE}
@@ -443,15 +507,27 @@ likelihood <- function(x, sum = TRUE){
 
 prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
 
-out <- fitVSEM("run10.RData")
-
-vsemDiagnostics(out,refPars)
-
-obs <- obs.orig
-
+out10 <- fitVSEM("run10.RData")
 ```
 
-# Perfect model unbalanced data that has an additive bias with systmatic bias parameter
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="Biased low-volume data"}
+vsemDiagnostics(out10,refPars)
+skill[[9]] <-vsemScore(out10) 
+knitr::kable(skill[[9]])
+obs <- obs.orig
+```
+
+### Summary table
+
+## note: in root 
+
+| Experiment | Model | Data bias | Data volume | Model RMSE | Model Bias |
+|:-----------|------:|----------:|------------:|-----------:|-----------:|
+
+
+## Addressing errors
+
+### Perfect model unbalanced data that has an additive bias with systmatic bias parameter
 Cs obs have an additive error of 4
 Gaussian 1000 obs for NEE and Cs and only 6 for Cv
 
@@ -485,9 +561,12 @@ likelihood <- function(x, sum = TRUE){
 
 prior         <- createUniformPrior(lower = addPars$lower[parSel], upper = addPars$upper[parSel])
 
-out <- fitVSEM("run8.RData")
-vsemDiagnostics(out,addPars)
+out8 <- fitVSEM("run8.RData")
+```
 
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="Biased, unbalanced data; Additive bias likelihood"}
+vsemDiagnostics(out8,addPars)
+obs <- obs.orig
 ```
 
 
