@@ -18,9 +18,9 @@ output:
 ```{r include=FALSE}
 ### SETTINGS
 library(BayesianTools)
-CLEAN.BUILD = FALSE
+CLEAN.BUILD = TRUE
 PLOT.DIAGNOSTICS = TRUE
-defParms = 1:9
+defParms = c(1,3,5,6,9,10)
 ```
 
 # Introduction
@@ -60,15 +60,15 @@ if(!file.exists("obs.RData")|CLEAN.BUILD){
   PAR                   <- VSEMcreatePAR(1:ndays)
   refPars               <- VSEMgetDefaults()
   ## merge non-identifiable parameters
-  refPars[1,] <- refPars[1,]*refPars[2,]
-  refPars[3,] <- refPars[3,]*(1-refPars[4,c(1,3,2)])
-  refPars <- refPars[-c(2,4),] 
+  ## refPars[1,] <- refPars[1,]*refPars[2,]
+  ## refPars[3,] <- refPars[3,]*(1-refPars[4,c(1,3,2)])
+  ## refPars <- refPars[-c(2,4),]  
   nvar = nrow(refPars)+1
   ## add SD
   refPars[nvar,]          <- c(0.1, 0.001, 0.5)
   rownames(refPars)[nvar] <- "error-sd"
   ## calculate 'true' output and pseudodata
-  referenceData         <- VSEM(refPars$best[1:(nvar-1)], PAR,vers=2) 
+  referenceData         <- VSEM(refPars$best[1:(nvar-1)], PAR,vers=1) 
   obs                   <- referenceData + rnorm(length(referenceData), sd = (abs(referenceData) + 1E-7) * refPars$best[nvar])
   save(nvar,ndays,PAR,refPars,referenceData,obs,file="obs.RData")
   if(PLOT.DIAGNOSTICS){
@@ -234,7 +234,7 @@ rm(obsSel)
 isLow = NULL
 likelihood <- function(x, sum = TRUE){
   x         <- createMixWithDefaults(x, newPars, parSel)
-  predicted <- VSEM(x[-nvar], PAR,vers=2)
+  predicted <- VSEM(x[-nvar], PAR,vers=1)
   diff      <- c(predicted[,1:3] - obs[,1:3])
   llValues  <- dnorm(diff, sd = (abs(c(predicted[,1:3])) + 0.0000001) * x[nvar], log = T) 
   if (sum == FALSE) return(llValues)
@@ -317,14 +317,15 @@ knitr::kable(skill[[3]])
 ### Model with error balanced perfect data (1000 obs) 
 Remove the root pool by setting allocation to vegetation Av = 1.0
 
-```{r echo=FALSE, background='white', fig.height=7, fig.cap="Output from error model after calibration"}
+```{r include=FALSE}
 
 ## Likelihood: Gaussian 1000 obs for each of NEE, Cv and Cs
 newPars <- refPars$best
 names(newPars) = row.names(refPars)
 newPars["Av"]  <- 1.0
 newPars["Cr"] <- 0.0
-parSel = c(defParms[-which(names(newPars)%in% c("Av","Cr","tauR"))], nvar)
+parSel = c(defParms, nvar)
+## parSel = c(defParms[-which(names(newPars)%in% c("Av","Cr","tauR"))], nvar)
 rm(obsSel)
 isLow = NULL
 likelihood <- function(x, sum = TRUE){
@@ -356,7 +357,8 @@ newPars <- refPars$best
 names(newPars) = row.names(refPars)
 newPars["Av"]  <- 1.0
 newPars["Cr"] <- 0.0
-parSel = c(defParms[-which(names(newPars)%in% c("Av","Cr","tauR"))], nvar)
+parSel = c(defParms, nvar)
+## parSel = c(defParms[-which(names(newPars)%in% c("Av","Cr","tauR"))], nvar)
 obsSel <- c(1,202,390,550,750,920)
 isLow = 1:3
 ## obsSel = seq(1,366,72)
@@ -388,7 +390,8 @@ newPars <- refPars$best
 names(newPars) = row.names(refPars)
 newPars["Av"]  <- 1.0
 newPars["Cr"] <- 0.0
-parSel = c(defParms[-which(names(newPars)%in% c("Av","Cr","tauR"))], nvar)
+parSel = c(defParms, nvar)
+## parSel = c(defParms[-which(names(newPars)%in% c("Av","Cr","tauR"))], nvar)
 obsSel <- c(1,202,390,550,750,920)
 isLow = 2
 likelihood <- function(x, sum = TRUE){
@@ -568,6 +571,7 @@ out8 <- fitVSEM("run8.RData")
 vsemDiagnostics(out8,addPars)
 obs <- obs.orig
 ```
+
 
 
 # Short term ideas
