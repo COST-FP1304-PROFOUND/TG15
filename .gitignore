@@ -6,3 +6,6 @@ TG15-VSEM_cache
 *.pdf
 *.html
 *.bat
+*.RData
+*.R
+*#

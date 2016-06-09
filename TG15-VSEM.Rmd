@@ -18,7 +18,7 @@ output:
 ```{r include=FALSE}
 ### SETTINGS
 library(BayesianTools)
-CLEAN.BUILD = TRUE
+CLEAN.BUILD = FALSE
 PLOT.DIAGNOSTICS = TRUE
 defParms = c(1,3,5,6,9,10)
 ```
@@ -55,14 +55,9 @@ What is the effective information content (IC) of observations
 ```{r include=FALSE}
 if(!file.exists("obs.RData")|CLEAN.BUILD){
   set.seed(123)
-  ## ndays                 <- 366
   ndays                 <- 1000
   PAR                   <- VSEMcreatePAR(1:ndays)
   refPars               <- VSEMgetDefaults()
-  ## merge non-identifiable parameters
-  ## refPars[1,] <- refPars[1,]*refPars[2,]
-  ## refPars[3,] <- refPars[3,]*(1-refPars[4,c(1,3,2)])
-  ## refPars <- refPars[-c(2,4),]  
   nvar = nrow(refPars)+1
   ## add SD
   refPars[nvar,]          <- c(0.1, 0.001, 0.5)
@@ -140,10 +135,10 @@ plotTimeSeriesResults <- function(x, model, observed, error = NULL, plotResidual
   lines(pred[2,],col="red",lwd=2)
 }
 
-fitVSEM <- function(fname){
+fitVSEM <- function(fname,iter=20000,params=refPars){
   if(!file.exists(fname)|CLEAN.BUILD){
-    bayesianSetup <- createBayesianSetup(likelihood, prior,best = newPars[parSel], names = rownames(refPars)[parSel])
-    settings = list(iterations = 20000)
+    bayesianSetup <- createBayesianSetup(likelihood, prior,best = newPars[parSel], names = rownames(params)[parSel])
+    settings = list(iterations = iter)
     out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "DREAMzs", settings = settings)
     save(out,file=fname)
   } else {
@@ -155,6 +150,14 @@ fitVSEM <- function(fname){
 runModel <- function(par,pool){
   x = createMixWithDefaults(par, newPars, parSel)
   predicted <- VSEM(x[1:(nvar-1)], PAR)
+  return(predicted[,pool])
+}
+
+runModelEsys <- function(par,pool){
+  x = createMixWithDefaults(par, newPars, parSel)
+  predicted <- VSEM(x[1:(nvar-1)], PAR)
+  if (pool == 1) predicted[,1] = predicted[,1]*x[nvar+1]  + x[nvar+3]
+  if (pool == 3) predicted[,3] = (predicted[1,3] + (predicted[,3] - predicted[1,3])*x[nvar+2]) + x[nvar+4]
   return(predicted[,pool])
 }
 
@@ -176,14 +179,14 @@ plotPosteriors <- function(out,refPars){
 vsemDiagnostics <- function(out,refPars){
   ## thin
   nmc = nrow(out$chain[[1]])
-  out$chain <- window(out$chain,start=nmc/2,thin=(nmc/2)/5000)
+  ## out$chain <- window(out$chain,start=nmc/2,thin=(nmc/2)/5000)
   ## could replace above with getSample?
   
   par(mfrow = c(2,2))
   for(i in 1:3){
     myObs = obs[,i]
     if(exists("obsSel") & i %in% isLow) myObs[-obsSel] <- NA
-    plotTimeSeriesResults(x = out, model = runModel, observed = myObs, error = errorFunction,pool=i)
+    plotTimeSeriesResults(x = out, model = runModel, observed = myObs, error = errorFunction,pool=i,start=nmc/2)
     lines(referenceData[,i],col=3,lwd=1)
   }
   
@@ -191,6 +194,36 @@ vsemDiagnostics <- function(out,refPars){
     
     #plot(out$chain)
     
+    out$chain <- window(out$chain,start=nmc/2,thin=(nmc/2)/5000)
+      
+    par(mfrow=c(3,2))
+    plotPosteriors(out,refPars)
+    
+    par(mfrow=c(1,1))
+    correlationPlot(out)
+  }
+}
+
+vsemDiagnosticsEsys<- function(out,refPars){
+  ## thin
+  nmc = nrow(out$chain[[1]])
+  ## out$chain <- window(out$chain,start=nmc/2,thin=(nmc/2)/5000)
+  ## could replace above with getSample?
+  
+  par(mfrow = c(2,2))
+  for(i in 1:3){
+    myObs = obs[,i]
+    if(exists("obsSel") & i %in% isLow) myObs[-obsSel] <- NA
+    plotTimeSeriesResults(x = out, model = runModelEsys, observed = myObs,pool=i,start=nmc/2)
+    lines(referenceData[,i],col=3,lwd=1)
+  }
+  
+  if(PLOT.DIAGNOSTICS){
+    
+    #plot(out$chain)
+    
+    out$chain <- window(out$chain,start=nmc/2,thin=(nmc/2)/5000)
+
     par(mfrow=c(3,2))
     plotPosteriors(out,refPars)
     
@@ -248,7 +281,7 @@ out1 <- fitVSEM("run1.RData")
 ```{r echo=FALSE, background='white', fig.height=7, fig.cap="Perfect model, perfect data"}
 vsemDiagnostics(out1,refPars)
 skill[[1]] <-vsemScore(out1) 
-knitr::kable(skill[[1]])
+knitr::kable(skill[[1]],digits=3)
 ```
 
 ### Perfect model unbalanced perfect data 
@@ -281,7 +314,7 @@ out2 <- fitVSEM("run2.RData")
 ```{r echo=FALSE, background='white', fig.height=7, fig.cap="Perfect model, unbalanced data"}
 vsemDiagnostics(out2,refPars)
 skill[[2]] <-vsemScore(out2) 
-knitr::kable(skill[[2]])
+knitr::kable(skill[[2]],digits=3)
 ```
 
 ### Perfect model, low-volume perfect data 
@@ -289,6 +322,7 @@ Gaussian, only 6 observations for NEE. Cs, and Cv
 
 ```{r include=FALSE}
 newPars <- refPars$best
+names(newPars) = row.names(refPars)
 parSel = c(defParms, nvar)
 obsSel <- c(1,202,390,550,750,920)
 isLow = 1:3 ## which variables has few observations
@@ -311,7 +345,7 @@ out9 <- fitVSEM("run9.RData")
 ```{r echo=FALSE, background='white', fig.height=7, fig.cap="Perfect model, low volume data"}
 vsemDiagnostics(out9,refPars)
 skill[[3]] <-vsemScore(out9) 
-knitr::kable(skill[[3]])
+knitr::kable(skill[[3]],digits=3)
 ```
 
 ### Model with error balanced perfect data (1000 obs) 
@@ -345,7 +379,7 @@ out3 <- fitVSEM("run3.RData")
 ```{r echo=FALSE, background='white', fig.height=7, fig.cap="Output from error model after calibration"}
 vsemDiagnostics(out3,refPars)
 skill[[4]] <-vsemScore(out3) 
-knitr::kable(skill[[4]])
+knitr::kable(skill[[4]],digits=3)
 ```
 
 ### Model with error balanced perfect data (6 obs) 
@@ -378,7 +412,7 @@ out4 <- fitVSEM("run4.RData")
 ```{r echo=FALSE, background='white', fig.height=7, fig.cap="Output from perfect model after calibration"}
 vsemDiagnostics(out4,refPars)
 skill[[5]] <-vsemScore(out4) 
-knitr::kable(skill[[5]])
+knitr::kable(skill[[5]],digits=3)
 ```
 
 ### Model with error unbalanced perfect data 
@@ -415,7 +449,7 @@ out5 <- fitVSEM("run5.RData")
 ```{r echo=FALSE, background='white', fig.height=7, fig.cap="Model error, unbalanced data"}
 vsemDiagnostics(out5,refPars)
 skill[[6]] <-vsemScore(out5) 
-knitr::kable(skill[[6]])
+knitr::kable(skill[[6]],digits=3)
 ```
 
 ### Perfect model balanced data that has an additive bias 
@@ -447,7 +481,7 @@ out6 <- fitVSEM("run6.RData")
 vsemDiagnostics(out6,refPars)
 obs <- obs.orig
 skill[[7]] <-vsemScore(out6) 
-knitr::kable(skill[[7]])
+knitr::kable(skill[[7]],digits=3)
 ```
 
 ### Perfect model unbalanced data that has an additive bias
@@ -458,6 +492,7 @@ obs <- obs.orig
 obs[,3] <- obs[,3] + 4.0
 
 newPars <- refPars$best
+names(newPars) = row.names(refPars)
 parSel = c(defParms, nvar)
 obsSel <- c(1,202,390,550,750,920)
 isLow = 2
@@ -482,7 +517,7 @@ out7 <- fitVSEM("run7.RData")
 ```{r echo=FALSE, background='white', fig.height=7, fig.cap="Biased, unbalanced data"}
 vsemDiagnostics(out7,refPars)
 skill[[8]] <-vsemScore(out7) 
-knitr::kable(skill[[8]])
+knitr::kable(skill[[8]],digits=3)
 obs <- obs.orig
 ```
 
@@ -516,7 +551,109 @@ out10 <- fitVSEM("run10.RData")
 ```{r echo=FALSE, background='white', fig.height=7, fig.cap="Biased low-volume data"}
 vsemDiagnostics(out10,refPars)
 skill[[9]] <-vsemScore(out10) 
-knitr::kable(skill[[9]])
+knitr::kable(skill[[9]],digits=3)
+obs <- obs.orig
+```
+
+### Perfect model balanced data that has a multiplicative bias 
+Cs obs have a multiplicative error of times 2
+
+```{r include=FALSE}
+obs.orig <- obs
+obs[,3] <- obs[,3] * 2.0
+
+newPars <- refPars$best
+parSel = c(defParms, nvar)
+rm(obsSel)
+isLow = NULL
+likelihood <- function(x, sum = TRUE){
+  x         <- createMixWithDefaults(x, newPars, parSel)
+  predicted <- VSEM(x[1:11], PAR)
+  diff      <- c(predicted[,1:3] - obs[,1:3])
+  llValues  <- dnorm(diff, sd = (abs(c(predicted[,1:3])) + 0.0000001) * x[nvar], log = T) 
+  if (sum == FALSE) return(llValues)
+  else return(sum(llValues))
+}
+
+prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
+
+out11 <- fitVSEM("run11.RData")
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="Perfect model, biased data"}
+vsemDiagnostics(out11,refPars)
+obs <- obs.orig
+skill[[10]] <-vsemScore(out11) 
+knitr::kable(skill[[10]],digits=3)
+```
+
+### Perfect model unbalanced data that has a multiplicative bias 
+Cs obs have a multiplicative error of times 2
+
+```{r include=FALSE}
+obs.orig <- obs
+obs[,3] <- obs[,3] * 2.0
+
+newPars <- refPars$best
+parSel = c(defParms, nvar)
+obsSel <- c(1,202,390,550,750,920)
+isLow = 2
+likelihood <- function(x, sum = TRUE){
+  x         <- createMixWithDefaults(x, newPars, parSel)
+  predicted <- VSEM(x[1:(nvar-1)], PAR)
+  diff       <- c(predicted[,c(1,3)] - obs[,c(1,3)])
+  llValues1  <- dnorm(diff, sd = (abs(c(predicted[,c(1,3)])) + 0.0000001) * x[nvar], log = T) 
+
+  diff       <- c(predicted[obsSel,2] - obs[obsSel,2])
+  llValues2  <- dnorm(diff, sd = (abs(c(predicted[obsSel,2])) + 0.0000001) * x[nvar], log = T) 
+
+  if (sum == FALSE) return(llValues)
+  else return(sum(llValues1,llValues2))
+}
+
+prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
+
+out12 <- fitVSEM("run12.RData")
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="Biased, unbalanced data"}
+vsemDiagnostics(out12,refPars)
+skill[[11]] <-vsemScore(out12) 
+knitr::kable(skill[[11]],digits=3)
+obs <- obs.orig
+```
+
+### Perfect model low-volume data that has a multiplicative bias 
+Cs obs have a multiplicative error of times 2
+
+```{r include=FALSE}
+obs.orig <- obs
+obs[,3] <- obs[,3] * 2.0
+
+newPars <- refPars$best
+parSel = c(defParms, nvar)
+obsSel <- c(1,202,390,550,750,920)
+isLow = 1:3
+likelihood <- function(x, sum = TRUE){
+  x         <- createMixWithDefaults(x, newPars, parSel)
+  predicted <- VSEM(x[1:(nvar-1)], PAR)
+
+  diff       <- c(predicted[obsSel,] - obs[obsSel,])
+  llValues  <- dnorm(diff, sd = (abs(c(predicted[obsSel,])) + 0.0000001) * x[nvar], log = T) 
+
+  if (sum == FALSE) return(llValues)
+  else return(sum(llValues))
+}
+
+prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
+
+out13 <- fitVSEM("run13.RData")
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="Biased low-volume data"}
+vsemDiagnostics(out13,refPars)
+skill[[12]] <-vsemScore(out13) 
+knitr::kable(skill[[12]],digits=3)
 obs <- obs.orig
 ```
 
@@ -564,14 +701,113 @@ likelihood <- function(x, sum = TRUE){
 
 prior         <- createUniformPrior(lower = addPars$lower[parSel], upper = addPars$upper[parSel])
 
-out8 <- fitVSEM("run8.RData")
+out8 <- fitVSEM("run8.RData", params=addPars)
 ```
 
-```{r echo=FALSE, background='white', fig.height=7, fig.cap="Biased, unbalanced data; Additive bias likelihood"}
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="Biased, unbalanced data; additive bias likelihood"}
 vsemDiagnostics(out8,addPars)
 obs <- obs.orig
+skill[[13]] <-vsemScore(out8) 
+knitr::kable(skill[[13]],digits=3)
+obs <- obs.orig
+
 ```
 
+### Perfect model unbalanced data that has a multiplicative bias with systmatic bias parameter
+Cs obs have an multiplicative error of times 2
+Gaussian 1000 obs for NEE and Cs and only 6 for Cv
+
+
+```{r include=FALSE}
+obs <- obs.orig
+obs[,3] <- obs[,3] * 2.0
+
+addPars <- refPars
+addPars[nvar+1,] <- c(2.0, 0.0, 4.0)
+row.names(addPars)<-c(row.names(refPars),"EsysCs")
+newPars <- addPars$best
+parSel = c(defParms, nvar,nvar+1)
+obsSel <- c(1,202,390,550,750,920)
+isLow = 2
+likelihood <- function(x, sum = TRUE){
+  x         <- createMixWithDefaults(x, newPars, parSel)
+  predicted <- VSEM(x[1:(nvar-1)], PAR)
+  predicted[,3]   <- predicted[,3] * x[nvar+1]
+  
+  diff       <- c(predicted[,c(1,3)] - obs[,c(1,3)])
+  llValues1  <- dnorm(diff, sd = (abs(c(predicted[,c(1,3)])) + 0.0000001) * x[nvar], log = T) 
+
+  diff       <- c(predicted[obsSel,2] - obs[obsSel,2])
+  llValues2  <- dnorm(diff, sd = (abs(c(predicted[obsSel,2])) + 0.0000001) * x[nvar], log = T) 
+
+  if (sum == FALSE) return(llValues)
+  else return(sum(llValues1,llValues2))
+}
+
+prior         <- createUniformPrior(lower = addPars$lower[parSel], upper = addPars$upper[parSel])
+
+out14 <- fitVSEM("run14.RData", params=addPars)
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="Biased, unbalanced data; multiplicative bias likelihood"}
+vsemDiagnostics(out8,addPars)
+obs <- obs.orig
+skill[[14]] <-vsemScore(out14) 
+knitr::kable(skill[[14]],digits=3)
+obs <- obs.orig
+
+```
+
+
+
+### Model with error unbalanced perfect data with additive and multiplicative model error parameters
+```{r include=FALSE}
+obs <- obs.orig
+addPars[nvar+1,]          <- c(1.0, 0.1, 2.0)
+addPars[nvar+2,]          <- c(1.0, 0.1, 2.0)
+addPars[nvar+3,]          <- c(0.0, -0.01, 0.01)
+addPars[nvar+4,]          <- c(0.0, -1.0, 1.0)
+rownames(addPars)[nvar+1]   <- "modmultNEE-sd"
+rownames(addPars)[nvar+2]   <- "modmultCs-sd"
+rownames(addPars)[nvar+3]   <- "modaddNEE-sd"
+rownames(addPars)[nvar+4]   <- "modaddCs-sd"
+newPars <- addPars$best
+names(newPars) = row.names(addPars)
+newPars["Av"]  <- 1.0
+newPars["Cr"] <- 0.0
+## parSel = c(defParms, nvar,nvar+1,nvar+2)
+parSel = c(defParms, nvar,nvar+1,nvar+2,nvar+3,nvar+4)
+npar <- length(parSel)
+obsSel <- c(1,202,390,550,750,920)
+isLow = 2
+likelihood <- function(x, sum = TRUE){
+  x         <- createMixWithDefaults(x, newPars, parSel)
+  predicted <- VSEM(x[1:(nvar-1)], PAR)
+  diff       <- c((predicted[,1]*x[nvar+1] + x[nvar+3]) - obs[,1])
+  llValues1  <- dnorm(diff, sd = (abs(c(obs[,1])) + 0.0000001) * x[nvar], log = T) 
+  
+  diff       <- c(predicted[obsSel,2] - obs[obsSel,2])
+  llValues2  <- dnorm(diff, sd = (abs(c(obs[obsSel,2])) + 0.0000001) * x[nvar], log = T) 
+
+  diff       <- c(((predicted[1,3] + (predicted[,3] - predicted[1,3])*x[nvar+2]) + x[nvar+4]) - obs[,3]) 
+  llValues3  <- dnorm(diff, sd = (abs(c(obs[,3])) + 0.0000001) * x[nvar], log = T)
+  
+  if (sum == FALSE) return(llValues)
+  else return(sum(llValues1,llValues2,llValues3))
+}
+
+prior         <- createUniformPrior(lower = addPars$lower[parSel], upper = addPars$upper[parSel])
+out15 <- fitVSEM("run15.RData",iter=40000, params=addPars)
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="Model error, unbalanced data; additive + multiplicative bias likelihood"}
+vsemDiagnosticsEsys(out15,addPars)
+obs <- obs.orig
+skill[[15]] <-vsemScore(out15) 
+knitr::kable(skill[[15]],digits=3)
+obs <- obs.orig
+
+```
 
 
 # Short term ideas
