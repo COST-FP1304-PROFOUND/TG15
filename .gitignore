@@ -3,7 +3,6 @@
 TG15-VSEM_files
 TG15-VSEM_cache
 *.md
-*.pdf
 *.html
 *.bat
 *.RData
