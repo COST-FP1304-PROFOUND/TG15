@@ -1,0 +1,52 @@
+# Introduction
+
+ Main issue
+
+  * Because of the difference in cost in collecting automatic
+    measurements such as eddy covariance data and manual measurements
+    such as soil and plant carbon stocks, there is often two orders of
+    magnitude difference or more imbalance between the number of
+    measurements available from different parts of the forest
+    ecosystem.
+  * Since each measurement point normally counts as an independent piece of
+    data in the Likelihood of Bayesian calibration the influence of
+    the sparse observations can often be overwhelmed by the higher
+    frequency data (Cameron et al (in review 2018). 
+  * As more and more EO data becomes available (e.g. Sentinal) this
+    issue of extremely imbalanced datasets is likely to worsen
+    significantly.
+	
+ What is the effective information content (IC) of observations
+ (possibly include or is this really a different issue? - discuss
+ Mike/Marcel)
+
+  * One eddy covariance tower with 17000 measurements count this as n = 1 or n = 17000 obs?
+  * Aggregate 5 min data to 10 min retain essentially same IC but sample size halved!
+  * Spectral analysis of eddy covariance NEE data two peaks: annual(seasonal) and diurnal
+  * Often assume in BC that each data*point provides independent information
+  * If biases in data or model errors are not independent
+
+ To-date solutions generally ad hoc and/or arbitrary 
+  
+  * Literature review...
+  * Ignore but then models over-fitted and uncertainty underestimated
+  * Apply arbitrary weights to rebalance influence of data in BC
+  * Thin the number of eddy covariance obs
+      * throwing away useful information
+
+ Purpose of paper:
+ 
+  1. To identify the issue of using unbalanced data in parameter calibration of ecosystem models using artificial experiments. 
+  2. Develop a general methodology for identifying whether and where the issue becomes a problem.
+  3. Start to explore the simplest modifications to the likelihood to represent model structural error and data bias to help ameliorate the issue identified in (1). 
+
+ Artificial experiments:
+ 
+  * Developed a very simple process-besed ecosystem model (VSEM) as a testbed for
+    experiments. Simple enough that results are easily
+    understood. Sufficiently complex that we can be confident that the
+    model/data issues identified here would also been seen in more
+    complex/realistic process-based ecosystem models. 
+  * Calibration data model's own output to control:
+	1. test influence of model and data perfection/imperfection
+	2.  test influence of balance/unbalance of data in the calibration

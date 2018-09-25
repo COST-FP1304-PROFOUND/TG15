@@ -1,0 +1,31 @@
+# Discussion
+
+## Identifying the issue with unbalanced dataset BC 
+
+ * Unbalanced data are not an issue though uncertainty is larger.
+ * For a model with a significant structural error or systematic bias
+   in the calibration data parameters 'absorb' the error so that model
+   output is not too far away from the data.
+ * With a model structural error or data with a systematic bias
+   general sense is that sparse data are somewhat ignored in the BC in
+   favour of the plentiful data.
+   * This is what we often observe with unbalanced datasets in BC. For
+     example, Cameron et al (2018) but results here make it apparent
+     that the issue is the presence of the structural error in the
+     model rather than that the calibration data are unbalanced.
+	 
+## Diagnostic tool introduced
+
+ * Have created a methodology and graph which can be used in many
+   applications to diagnose and help judge the severity of the issue.
+
+## Representing model and data error in BC helps to alleviate the issue
+
+ * In this very simple example we were able to demonstrate a
+   significant improvement by including terms in the likelihood to
+   represent model and data error. 
+   * In more real-world applications representing model and data error
+     in BC will be much more challenging but the analysis demonstrated
+     here shows how to deal with the issue of calibrating with
+     unbalanced datasets without resorting to ad hoc methods.
+ 
