@@ -24,7 +24,7 @@
  * In this very simple example we were able to demonstrate a
    significant improvement by including terms in the likelihood to
    represent model and data error. 
-   * In more real-world applications representing model and data error
+   * In more real-world applications, representing model and data error
      in BC will be much more challenging but the analysis demonstrated
      here shows how to deal with the issue of calibrating with
      unbalanced datasets without resorting to ad hoc methods.
