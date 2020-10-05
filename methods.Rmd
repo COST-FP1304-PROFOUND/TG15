@@ -9,7 +9,22 @@ commonly used in carbon growth type ecosystem modelling.
 
 In essence, the model determines the accumulation of carbon in the plant and soil from the growth of
 the plant via photosynthesis and senescence to the soil which respires carbon back to the
-atmosphere.
+atmosphere. The timestep of the VSEM is daily. 
+
+### VSEM input data: Photosythetically active radiation (PAR)
+
+The VSEM requires only one input dataset to drive the model namely daily PAR. 
+
+Since we are interested in virtual experiments here we generate the PAR input data using an
+sinusoidal function.
+
+\begin{align}
+PAR &= (\lvert \sin(Days/365 \times \pi)  + \epsillon \rvert) \times 10 \\
+\end{align}
+
+ * PAR Photosynthetically active radiation
+ * $\epsillon$ Gaussian noise added
+ * Days number of days
 
 ### Photosynthesis equation
 
@@ -22,7 +37,7 @@ determines the fraction of GPP that is autotrophic respiration, giving the Net P
 NPP &= PAR \times LUE \times (1 - \exp^{(-KEXT \times C_v)})\\
 \end{align}
 
- * PAR Photosynthetically active radiation
+ * PAR Photosynthetically active radiation (MJ $m^{-2}$ $day^{-1}$)
  * LUE Light use efficiency of NPP (Ra implicit)
  * KEXT Beer's law light extinction coeff
  * $C_v$ Vegetation carbon
@@ -49,11 +64,41 @@ in the soil is determined via a soil turnover rate.
 ## Idealised experiments with virtual data from VSEM
 ```{r child = 'TG15-virtualData.Rmd'}
 ```
- * advantage we know what the truth is.
- * balanced versus unbalanced 
- * perfect model and model with known error
- * data with and without known bias
- * include additive and multiplicative parameters to represent structural errors in the model and systematic biases in the data. 
+
+### Perfect model
+
+A central theme that we consider here is the significance of a perfect model structure with all the
+processes modelled perfectly. The only way to ensure a perfect model is to take the output from the
+VSEM and consider this as virtual data in the BC. Gaussian noise is added to the model output to
+represent system varability that is not captured by the model (as is away the case) but crucially
+can be represented perfectly by the likelihood function that we use in the BC. The observations are
+for the full 2048 day length of the VSEM for NEE, vegetative carbon and soil carbon.
+
+For the vegetaive carbon we create a sparse dataset to simulate having an imbalance between
+observations available for vegetative carbon, soil carbon and NEE. The sparse dataset has six
+observations for days 2, 404, 780, 1100, 1500 and 1840.
+
+### Model with known structural error
+
+To simulate a model with a known structural error we consider a situation where a major model
+process/structure is unknown and therefore missing in the model. Here we remove the root pool
+completely from the VSEM to simulate a major structural error. This is done by initialising the root
+pool to zero and setting the root allocation fraction to zero so that all the NPP is now allocated
+to the vegetation pool. This also of course shuts off any senescence from the root pool to the
+soil. This gives the model a major structural error as we might have in a real situation whilst
+being sufficiently simple that we can still interpret the influence of the error.
+
+### Observational data with known bias
+
+In addition to considering model structural error, we also wish to investigate the influence of
+observations with biases since all observational data will to a greater or lesser extent contain
+biases. Here we simulate data biases by multiplying the soil data by two to represent a considerable
+multiplicative bias in the observations of soil carbon. 
+
+## Modified Likelihood to represent structural errors in the model and systematic biases in the data. 
+
+Present the inclusion of additive and multiplicative parameter bias parameters in the likelihood
+here or leave until results section?
 
 ```{r include=FALSE}
 ## Load older versions of BayesianTools R routines needed in TG15
