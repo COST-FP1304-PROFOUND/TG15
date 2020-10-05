@@ -1,9 +1,22 @@
 # Methods
 
 ## VSEM model
- * very simple toy model. not realistic but simplified form with and similar structure to many ecosystem models. 
 
-Photosynthesis equation
+Here we present the Very Simple Ecosystem Model (VSEM). The model was created to help illustrate the
+main ideas that we present here. The model was designed to be very simple rather then realistic, but
+yet resemble many typical, but more complicated, process-based ecosystem models (PBMs) that are
+commonly used in carbon growth type ecosystem modelling.
+
+In essence, the model determines the accumulation of carbon in the plant and soil from the growth of
+the plant via photosynthesis and senescence to the soil which respires carbon back to the
+atmosphere.
+
+### Photosynthesis equation
+
+The model calculates Gross Primary Productivity (GPP) using a very simple light-use efficiency (LUE)
+formulation multiplied by light interception. Light interception is calculated via Beer's law with a
+constant light extinction coefficient operating on Leaf Area Index (LAI).  A parameter (GAMMA)
+determines the fraction of GPP that is autotrophic respiration, giving the Net Primary Productivity (NPP).
 
 \begin{align}
 NPP &= PAR \times LUE \times (1 - \exp^{(-KEXT \times C_v)})\\
@@ -14,14 +27,19 @@ NPP &= PAR \times LUE \times (1 - \exp^{(-KEXT \times C_v)})\\
  * KEXT Beer's law light extinction coeff
  * $C_v$ Vegetation carbon
 
-Carbon pool state equations
+### Carbon pool state equations
+
+There are three state equations representing the change in time of vegetation ($C_v$), root ($C_r$)
+and soil ($C_s$) carbon pools. The Net Primary Productivity (NPP) is allocated to above (vegetation)
+and below(root) ground carbon pools via a fixed allocation fraction. Carbon is lost from the plant
+pools to a single soil pool via fixed vegetation and root turnover rates. Heterotropic respiration
+in the soil is determined via a soil turnover rate.
 
 \begin{align}
 \frac{dC_v}{dt}  &= A_v \times NPP &- \frac{C_v}{\tau_v} \\
 \frac{dC_r}{dt}  &= (1.0-A_v) \times NPP &- \frac{C_r}{\tau_r}\\
 \frac{dC_s}{dt}  &= \frac{C_r}{\tau_r} + \frac{C_v}{\tau_v} &- \frac{C_s}{\tau_s}
 \end{align}
- - $C_v$, $C_r$ and $C_s$ : Carbon in vegetation, root and soil pools
 
 ## Bayesian Calibration
  * refer to forthcoming TG13 paper
