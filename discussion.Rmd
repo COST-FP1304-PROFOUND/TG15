@@ -28,4 +28,13 @@
      in BC will be much more challenging but the analysis demonstrated
      here shows how to deal with the issue of calibrating with
      unbalanced datasets without resorting to ad hoc methods.
+	 
+## Is observational error too simple?
+ * Likelihood term is the same as the observational error term.
+
+## Eddy covariance data doesn’t close the budget
+ * Would never be able to match the data with a model that conserves energy.
+
+## Model with error and balanced data doesn’t show that the model has an error. 
+ * Model is able to match the data quite well so doesn't 'uncover' the serious model structural error. 	 
  
