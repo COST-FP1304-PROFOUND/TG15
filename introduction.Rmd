@@ -1,6 +1,23 @@
 # Introduction
 
+Big Picture
+* Era of rapid change (transients). Urgent need to better understand and predict natural systems
+* Era of big data -- unprecendented capacity to do so
+* Multiple constraints incredibly important to getting the right answer for the right reason (Medlyn)
+* Large push to do more data fusion (= statistical assimilation of multiple constraints), particularly within process models
+
+We live in an era of rapid environmental change, with multiple drivers of ecosystem processes shifting simultaneously (climate, CO2, nutrient deposition, pollution, species introductions, habitat destruction) and continuously. Because of this the natural systems that we seek to understand, manage, and conserve are in a period dominated by transient conditions and will continue to be so for the foreseeable future. In the face of this change there is an urgent need for ecologists and other environmental scientists to be able to better understand and predict both these transient dynamics and their long-term implications (Dietze et al. 2018). Fortunately, in many cases we are aided in this endeavor by an increasing volume, variety, and velocity of environmental data (CITE LaDeau, Jack Williams, RS, etc.) as well as increasingly sophisticated models (model review CITE?). 
+
+
+
+
+
  Main issue
+
+* In principle data fusion is straightforward -- one writes down statistical data models (Likelihoods) for each data constraint that are each linked to the same underlying process model (Zipkin, etc.)
+* In practice, there are some real 'gotchas' where things can go awry, and folks often respond to these with ad hoc 'bandaids'. Failure to investigate the underlying issue and address with solutions that have a degree of objectivity and don't violate statistical principles.
+
+* One of the most common 'gotchas' occurs when one has unbalanced data...
 
   * Because of the difference in cost in collecting automatic
     measurements such as eddy covariance data and manual measurements
