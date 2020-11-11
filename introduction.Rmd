@@ -1,29 +1,38 @@
 # Introduction
 
-We live in an era of rapid environmental change, with multiple drivers of ecosystem processes shifting simultaneously (climate, CO2, nutrient deposition, pollution, species introductions, habitat destruction) and continuously. Because of this the natural systems that we seek to understand, manage, and conserve are in a period dominated by transient conditions and will continue to be so for the foreseeable future. In the face of this change there is an urgent need for ecologists and other environmental scientists to be able to better understand and predict both these transient dynamics and their long-term implications (Dietze et al. 2018). Fortunately, in many cases we are aided in this endeavor by an increasing volume, variety, and velocity of environmental data (CITE LaDeau, Jack Williams, Keck review, etc.) as well as increasingly sophisticated models (model review CITE?). In other words, while we face unprecedented challenges, we also have unprecedented capacity to address those challenges.
+We live in an era of rapid environmental change, with multiple drivers of ecosystem processes shifting simultaneously (climate, CO2, nutrient deposition, pollution, species introductions, habitat destruction) and continuously. Because of this the natural systems that we seek to understand, manage, and conserve are in a period dominated by transient conditions and will continue to be so for the foreseeable future. In the face of this change there is an urgent need for ecologists and other environmental scientists to be able to better understand and predict both these transient dynamics and their long-term implications (Dietze et al. 2018). Fortunately, we are aided in this endeavor by an increasing volume, variety, and velocity of environmental data (CITE LaDeau, Jack Williams, Keck review, etc.) as well as increasingly sophisticated models (model review CITE?). In other words, while we face unprecedented challenges, we also have unprecedented capacity to address those challenges.
 
 As the variety of data available increases it is often the case that there are multiple types of data available to constrain our understanding of ecological processes, state variables, and/or model parameters.  Sometimes these are alternative ways of measuring the same thing (e.g. field versus remotely sensed estimates of leaf area). In other instances they are observations of different parts of a coupled problem. Most ecological processes are complex, and thus ecological models in general, and mechanistic models in particular, often need to predict multiple interacting variables, such as different species, life-history stages, demographic processes, or biogeochemical pools and fluxes. In both of these cases, there is information to be gained through _data fusion_ -- the use of multiple different data types to constrain a single model. Using multiple constraints is often essential; very often no single data type provides us with a complete understanding of a process.  We need to confront different parts of a model with different observations to make sure we are getting the right answer for the right reason, and have not just calibrated a model to produce the "right" answer for one variable through a series of compensating errors (Medlyn et al. 2015)
 
-In principle data fusion is conceptually straightforward. When writing down a statistical Likelihood for either a frequentist (maximum likelihood) or Bayesian model, one writes down multiple data models that are are connected to the same underlying process model. In practice, there are a number of places where things can go awry (Zipkin, etc.). One particularly common challenge is the need to combine unbalanced datasets, where one or more data types is available in a much larger volume than the other data constraints. This frequently occurs when combining low-volumes of manually-collected field data with high-volumes automatically-collected data collected either from in situ sensors or via remote sensing. A common observation in this situation is that the output from a data fusion analysis (e.g. calibrated model parameters) is virtually identical to the results achieved by fitting the model to the high-volume data by itself. In essence, the data fusion essentially ignores the low volume data, which gets swamped out by the much larger sample size of the high volume data. This can be disappointing as the lower-volume data often represents considerable labor and was often collected, as noted earlier, to ensure that the model is getting the right answer for the wrong reason. To add insult to injury, it is also often the case that the addition of the high-volume data can cause the predictions of the low-volume variable to perform worse. For example.. <<add examples>>.
+In principle data fusion is conceptually straightforward. When writing down a statistical Likelihood for either a frequentist (maximum likelihood) or Bayesian model, one writes down multiple data models that are are connected to the same underlying process model. In practice, there are a number of places where things can go awry (Zipkin, etc.). One particularly common challenge is the need to combine unbalanced datasets, where one or more data types is available in a much larger volume than the other data constraints. This frequently occurs when combining low-volumes of manually-collected field data with high-volumes automatically-collected data collected either from in situ sensors or via remote sensing. For example, in studies of the terrestrial carbon cycle there is often two orders of magnitude difference or more imbalance between the number of measurements available from automated measurements such as eddy covariance data and manual measurements such as soil and plant carbon stocks.
 
-Because.. 
+A common observation when combining unbalanced data is that the outputs from data fusion (e.g. calibrated model parameters) are virtually identical to the results achieved by fitting the model to the high-volume data by itself.
+Since each data point is usually modeled as an independent piece of
+data in a Likelihood, the influence of the sparse observations can often be overwhelmed by the higher frequency data (Cameron et al (in review 2018). 
+In essence, the data fusion ignores the low volume data, which gets swamped out by the much larger sample size of the high volume data.
+Needless to say, this can be disappointing as the lower-volume data often represents considerable labor and, as noted earlier, is often collected to ensure that the model is getting the right answer for the wrong reason. 
+As more and more data becomes available this issue of extremely imbalanced datasets is likely to worsen significantly. For example, NASA's earth observation system is expected to grow by an order of magnitude, from an already overwhelming ~5PB/yr in 2018-2020 to a staggering ~50PB/yr, as soon as 2022 (https://earthdata.nasa.gov/eosdis/cloud-evolution).
+
+To add insult to injury, it is also often the case that the addition of high-volume data can cause the predictions for other, low-volume output variables to perform worse. For example.. <<add examples>>.
+
+
+In response to data fusion gone awry, a number of _ad hoc_ solutions have been employed. For example, one might simply thin the high volume data until the data constraints are more balanced (CITE + example). Another common solution is to average the data over time or space, for example by aggregating high-frequency sensor data up to a daily, monthly, or annual number.
+Richardson, Moore, Riciutto << add more examples >>
+While neither of these approaches is technically wrong, they are definitely disappointing, as they involve throwing out data which results in a loss of information. Another option that has been employed is to apply weights to the different data models within the overall Likelihood, with the most common option being to downweight the high-volume data so that the different data models are more balanced. For example, Medvigy.... Weighting likelihoods has the intuitive appeal of retaining every observation, but it has the more subtle issue of not being grounded in probability theory, which is the basis for both Likelihood and Bayesian statistics. Mathmatically there's also nothing stopping one from 'upweighting' datasets, which amounts to pretending that you have more data than you actually do, leading to falsely overconfident parameter estimates and predictions. As a point of fact, in all of these options (thinning, averaging, weighting) the choices made shift not only the mean, but also have large impacts on the parameter uncertainties and model confidence intervals.
+
+The big problem with these approaches, whether thinning, averaging, or weighting data, is that they are all very subjective. There is a full continuum of options available, from working with data at its raw frequency all the way up to averaging all the data to a single point, and the outcome of the analysis will change, often dramatically, depending on the averaging/thinning/weighting one chooses. Indeed, practitioners are resorting to thinning/averaging/weighting precisely because it changes the outcome, but there's currently no objective advice on how to do so.
+
+More objective way to weight data...
+
+by Information content...
+Fer et al 2018, Dietze 2017
 
  Main issue
 * folks often respond to these with ad hoc 'bandaids'. Failure to investigate the underlying issue and address with solutions that have a degree of objectivity and don't violate statistical principles.
 
-  * Because of the difference in cost in collecting automatic
-    measurements such as eddy covariance data and manual measurements
-    such as soil and plant carbon stocks, there is often two orders of
-    magnitude difference or more imbalance between the number of
-    measurements available from different parts of the forest
-    ecosystem.
-  * Since each measurement point normally counts as an independent piece of
-    data in the Likelihood of Bayesian calibration the influence of
-    the sparse observations can often be overwhelmed by the higher
-    frequency data (Cameron et al (in review 2018). 
-  * As more and more EO data becomes available (e.g. Sentinal) this
-    issue of extremely imbalanced datasets is likely to worsen
-    significantly.
+  * 
+  * 
+  * 
 	
  What is the effective information content (IC) of observations
  (possibly include or is this really a different issue? - discuss
