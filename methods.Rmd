@@ -19,11 +19,11 @@ Since we are interested in virtual experiments here we generate the PAR input da
 sinusoidal function.
 
 \begin{align}
-PAR &= (\lvert \sin(Days/365 \times \pi)  + \epsillon \rvert) \times 10 \\
+PAR &= (\lvert \sin ( Days /365 \times \pi)  + \epsilon \rvert) \times 10 \\
 \end{align}
 
  * PAR Photosynthetically active radiation
- * $\epsillon$ Gaussian noise added
+ * $\epsilon$ Gaussian noise added
  * Days number of days
 
 ### Photosynthesis equation
@@ -44,7 +44,7 @@ NPP &= PAR \times LUE \times (1 - \exp^{(-KEXT \times C_v)})\\
 
 ### Carbon pool state equations
 
-There are three state equations representing the change in time of vegetation ($C_v$), root ($C_r$)
+There are three state equations [@Gill] representing the change in time of vegetation ($C_v$), root ($C_r$)
 and soil ($C_s$) carbon pools. The Net Primary Productivity (NPP) is allocated to above (vegetation)
 and below(root) ground carbon pools via a fixed allocation fraction. Carbon is lost from the plant
 pools to a single soil pool via fixed vegetation and root turnover rates. Heterotropic respiration
