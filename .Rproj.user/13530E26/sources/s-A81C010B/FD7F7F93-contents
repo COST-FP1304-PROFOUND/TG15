@@ -227,8 +227,8 @@ plotCor <- function(out,parSel,refPars,titleX){
   M <- cor(outM)
   # corrplot(M, type="upper", order="hclust", tl.col="black", tl.srt=45,method="pie")
   pCor <- ggcorrplot(M, hc.order = F, type = "upper",title=titleX,
-                     colors = c("#6D9EC1", "white", "#E46726"),lab = TRUE,
-  )
+                    colors = c("#6D9EC1", "white", "#E46726"),lab = TRUE,
+                    )
   upper<-M
   upper[lower.tri(M, diag = TRUE)]<-NA
   upper<-as.vector(upper)

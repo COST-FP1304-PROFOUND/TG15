@@ -1,0 +1,699 @@
+# Identifying the issue
+
+## Perfect model and balanced data
+
+ * refer to Fig. (\ref{fig:perModbalDataPar}) and (\ref{fig:perModbalDataOut}) 
+ * 'true' parameters largely found in posterior 
+ * posterior parameter controlling data error close to 0.1 coefficient of variance
+   originally imposed to create observations from 'true' model output.
+ * 50% quantile red line very close to green 'truth' line
+ * posterior very narrow marked by 2.5% and 97.5% quantiles
+ * most data within predictive interval
+
+```{r include=FALSE}
+
+
+library(BayesianTools)
+library(tidyverse)
+library(gridExtra)
+CLEAN.BUILD = FALSE
+## PLOT.DIAGNOSTICS = TRUE
+defParms = c(1,3,5,6,9,10) 
+#exptPath = "RDataWorkingDellLong/"
+exptPath = "~/research/TG15/RDataWorkingMSILong/"
+
+
+newPars <- refPars$best
+names(newPars) = row.names(refPars)
+parSel = c(defParms, nvar)
+rm(obsSel)
+isLow = NULL
+likelihood <- function(x, sum = TRUE){
+  x         <- createMixWithDefaultsOld(x, newPars, parSel)
+  predicted <- VSEM(x[-nvar], PAR)
+  diff       <- c(predicted[,1] - obs[,1])
+  llValues1  <- dnorm(diff, sd = pmax((abs(c(predicted[,1])) + 0.0000001) * x[nvar],0.0005), log = T)
+  diff       <- c(predicted[,2] - obs[,2])
+  llValues2  <- dnorm(diff, sd = (abs(c(predicted[,2])) + 0.0000001) * x[nvar], log = T)
+  diff       <- c(predicted[,3] - obs[,3])
+  llValues3  <- dnorm(diff, sd = (abs(c(predicted[,3])) + 0.0000001) * x[nvar], log = T)
+
+  ## if (sum == FALSE) return(llValues)
+  ## else return(sum(llValues1,llValues2,llValues3))
+  return(sum(llValues1,llValues2,llValues3))
+
+}
+
+prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
+out1 <- fitVSEM("run1.RData")
+
+MAP  <- calcMAP("MAP.Rdata")
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModbalDataPar}Perfect model, balanced data (NEE, Cv, Cs: 2048 obs). Marginal posterior distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
+plotParameters(out1,refPars)
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModbalDataOut}Perfect model, balanced data (NEE, Cv, Cs: 2048 obs). Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
+plotOutputs(out1,refPars)
+```
+
+## Perfect model and unbalanced data
+
+ * refer to Fig. (\ref{fig:perModunbalDataPar}) and (\ref{fig:perModunbalDataOut}) 
+ * despite unbalanced data 
+     * parameter values still close to true values in posterior 
+     * model output still close to truth even for vegetative carbon
+     * although now greater uncertainty for Cv then for balanced calibration
+	 
+```{r include=FALSE}
+newPars <- refPars$best
+parSel = c(defParms, nvar)
+obsSel <- c(1,202,390,550,750,920)*2.0
+isLow = 2
+likelihood <- function(x, sum = TRUE){
+  x         <- createMixWithDefaults(x, newPars, parSel)
+  predicted <- VSEM(x[-nvar], PAR)
+
+  diff       <- c(predicted[,1] - obs[,1])
+  llValues1  <- dnorm(diff, sd = pmax((abs(c(predicted[,1])) + 0.0000001) * x[nvar],0.0005), log = T)
+  diff       <- c(predicted[obsSel,2] - obs[obsSel,2])
+  llValues2  <- dnorm(diff, sd = (abs(c(predicted[obsSel,2])) + 0.0000001) * x[nvar], log = T)
+  diff       <- c(predicted[,3] - obs[,3])
+  llValues3  <- dnorm(diff, sd = (abs(c(predicted[,3])) + 0.0000001) * x[nvar], log = T)
+
+  ## if (sum == FALSE) return(llValues)
+  ## else return(sum(llValues1,llValues2,llValues3))
+  return(sum(llValues1,llValues2,llValues3))
+}
+
+## Prior
+prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
+
+out2 <- fitVSEM("run2.RData")
+
+MAPunbal <- calcMAP("MAPunbal.Rdata")
+```
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModunbalDataPar}Perfect model, unbalanced data (NEE, Cs: 2048 obs, Cv:  6 obs). Marginal posterior distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
+plotParameters(out2,refPars)
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModunbalDataOut}Perfect model, unbalanced data (NEE, Cs: 2048 obs, Cv:  6 obs). Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
+plotOutputs(out2,refPars)
+```
+
+## Model with error and balanced data
+
+ * refer to Fig. (\ref{fig:errModbalDataPar}) and (\ref{fig:errModbalDataOut}) 
+ * Root pool is effectively removed from the model by initialising pool to zero and
+   setting allocation to roots to zero. The loss of the root pool has introduced a
+   significant structural error to the model.
+ * Parameter posteriors now quite far away from 'true' values. 
+     * Especially parameter which controls turnover of vegetation so that rate of turnover
+       to soil is now more than doubled.
+ * Parameters calibration seems to have somewhat 'absorbed' the model structural error so that 
+     * outputs where there was data included in the BC are still not too far away from the
+       'truth' line.
+     * Cv now has too much variability but average increase not too bad.
+     * most data still within predictive interval.
+
+```{r include=FALSE}
+
+## Likelihood: Gaussian 2048 obs for each of NEE, Cv and Cs
+newPars <- refPars$best
+names(newPars) = row.names(refPars)
+newPars["Av"]  <- 1.0
+newPars["Cr"] <- 0.0
+parSel = c(defParms, nvar)
+rm(obsSel)
+isLow = NULL
+likelihood <- function(x, sum = TRUE){
+  x         <- createMixWithDefaults(x, newPars, parSel)
+  predicted <- VSEM(x[-nvar], PAR)
+  diff       <- c(predicted[,1] - obs[,1])
+  llValues1  <- dnorm(diff, sd = pmax((abs(c(predicted[,1])) + 0.0000001) * x[nvar],0.0005), log = T)
+  diff       <- c(predicted[,2] - obs[,2])
+  llValues2  <- dnorm(diff, sd = (abs(c(predicted[,2])) + 0.0000001) * x[nvar], log = T)
+  diff       <- c(predicted[,3] - obs[,3])
+  llValues3  <- dnorm(diff, sd = (abs(c(predicted[,3])) + 0.0000001) * x[nvar], log = T)
+
+  ## if (sum == FALSE) return(llValues)
+  ## else return(sum(llValues1,llValues2,llValues3))
+  return(sum(llValues1,llValues2,llValues3))
+
+}
+
+prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
+
+out3 <- fitVSEM("run3.RData")
+
+MAPErr <- calcMAP("MAPErr.Rdata")
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:errModbalDataPar}Model with error, balanced data. Marginal posterior distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
+plotParameters(out3,refPars)
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:errModbalDataOut}Model with error, balanced data. Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
+plotOutputs(out3,refPars)
+```
+
+## Model with error and unbalanced data
+
+ * refer to Fig. (\ref{fig:errModunbalDataPar}) and (\ref{fig:errModunbalDataOut}) 
+ * KEXT smaller, LUE larger, Cv larger, tauS smaller, tauV much larger, Cs much larger
+     * Generally parameters closer to their 'true' value. Less 'absorbing' of the model
+       structural error.
+ * NEE and soil carbon pools look largely unchanged to balanced run and close to data and
+   predictive interval.
+ * significant change to soil vegetation pool
+     * data outside of posterior and close to one edge of predictive interval
+     * departure from 'truth' line growing in time
+ * General sense is that six vegetation data points are being somewhat ignored by the
+   calibration in favour of the more plentiful NEE and soil carbon data.
+
+```{r include=FALSE}
+newPars <- refPars$best
+names(newPars) = row.names(refPars)
+newPars["Av"]  <- 1.0
+newPars["Cr"] <- 0.0
+parSel = c(defParms, nvar)
+obsSel <- c(1,202,390,550,750,920)*2.0
+isLow = 2
+likelihood <- function(x, sum = TRUE){
+  x         <- createMixWithDefaults(x, newPars, parSel)
+  predicted <- VSEM(x[-nvar], PAR)
+
+  diff       <- c(predicted[,1] - obs[,1])
+  llValues1  <- dnorm(diff, sd = pmax((abs(c(predicted[,1])) + 0.0000001) * x[nvar],0.0005), log = T)
+  diff       <- c(predicted[obsSel,2] - obs[obsSel,2])
+  llValues2  <- dnorm(diff, sd = (abs(c(predicted[obsSel,2])) + 0.0000001) * x[nvar], log = T)
+  diff       <- c(predicted[,3] - obs[,3])
+  llValues3  <- dnorm(diff, sd = (abs(c(predicted[,3])) + 0.0000001) * x[nvar], log = T)
+
+  ## if (sum == FALSE) return(llValues)
+  ## else return(sum(llValues1,llValues2,llValues3))
+  return(sum(llValues1,llValues2,llValues3))
+}
+
+prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
+
+out5 <- fitVSEM("run5.RData")
+
+MAPErrunbal <- calcMAP("MAPErrunbal.Rdata")
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:errModunbalDataPar}Model with error, unbalanced data (NEE, Cs: 2048 obs, Cv:  6 obs). Marginal posterior distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
+plotParameters(out5,refPars)
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:errModunbalDataOut}Model with error, unbalanced data (NEE, Cs: 2048 obs, Cv:  6 obs). Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
+plotOutputs(out5,refPars)
+```
+
+## Perfect model and balanced data with a multiplicative bias
+
+ * refer to Fig. (\ref{fig:perModbalDataBiasPar}) and (\ref{fig:perModbalDataBiasOut}) 
+ * soil carbon pool data multiplied by two to represent data that has a systematic bias
+ * Parameters KEXT larger, tauV smaller, tauS much smaller, Cs much larger
+ * as for model error parameter calibration 'absorb' the error
+     * initial value of soil pool parameter more than double 'true' value
+     * parameter controlling turnover time of soil approximately doubled to keep soil carbon pool high.
+ * calibrated outputs again reasonably close to observations for NEE and Cv
+     * slope of soil carbon pool with time too shallow (so some data outside predictive
+       interval) but compares well with 'true' line (influence of other more accurate NEE
+       and vegetative carbon data?)
+ * data and calibrated output of soil carbon greater than 'true' line by a factor of two
+   as might be expected to match calibration data.
+
+```{r include=FALSE}
+obs.orig     <- obs
+obs[,3] <- obs[,3] * 2.0
+
+newPars <- refPars$best
+names(newPars) = row.names(refPars)
+parSel = c(defParms, nvar)
+rm(obsSel)
+isLow = NULL
+likelihood <- function(x, sum = TRUE){
+  x         <- createMixWithDefaultsOld(x, newPars, parSel)
+  predicted <- VSEM(x[-nvar], PAR)
+  diff       <- c(predicted[,1] - obs[,1])
+  llValues1  <- dnorm(diff, sd = pmax((abs(c(predicted[,1])) + 0.0000001) * x[nvar],0.0005), log = T)
+  diff       <- c(predicted[,2] - obs[,2])
+  llValues2  <- dnorm(diff, sd = (abs(c(predicted[,2])) + 0.0000001) * x[nvar], log = T)
+  diff       <- c(predicted[,3] - obs[,3])
+  llValues3  <- dnorm(diff, sd = (abs(c(predicted[,3])) + 0.0000001) * x[nvar], log = T)
+
+  ## if (sum == FALSE) return(llValues)
+  ## else return(sum(llValues1,llValues2,llValues3))
+  return(sum(llValues1,llValues2,llValues3))
+}
+
+prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
+
+out12 <- fitVSEM("run12.RData")
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModbalDataBiasPar}Perfect model and balanced data with a multiplicative bias. Marginal posterior distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
+plotParameters(out12,refPars)
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModbalDataBiasOut}Perfect model and balanced data with a multiplicative bias. Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
+plotOutputs(out12,refPars)
+obs <- obs.orig
+```
+
+## Perfect model and unbalanced data with a multiplicative bias
+
+ * refer to Fig. (\ref{fig:perModunbalDataBiasPar}) and (\ref{fig:perModunbalDataBiasOut}) 
+ * most parameters are far away from their 'true' values
+ * soil carbon improved fit to data versus previous balanced data calibration
+ * six vegetative carbon data points effectively ignored and overpowered by NEE and soil
+   carbon data in the calibration.
+ 
+```{r include=FALSE}
+obs[,3] <- obs[,3] * 2.0
+
+newPars <- refPars$best
+parSel = c(defParms, nvar)
+obsSel <- c(1,202,390,550,750,920)*2.0
+isLow = 2
+likelihood <- function(x, sum = TRUE){
+  x         <- createMixWithDefaultsOld(x, newPars, parSel)
+  predicted <- VSEM(x[-nvar], PAR)
+
+  diff       <- c(predicted[,1] - obs[,1])
+  llValues1  <- dnorm(diff, sd = pmax((abs(c(predicted[,1])) + 0.0000001) * x[nvar],0.0005), log = T)
+  diff       <- c(predicted[obsSel,2] - obs[obsSel,2])
+  llValues2  <- dnorm(diff, sd = (abs(c(predicted[obsSel,2])) + 0.0000001) * x[nvar], log = T)
+  diff       <- c(predicted[,3] - obs[,3])
+  llValues3  <- dnorm(diff, sd = (abs(c(predicted[,3])) + 0.0000001) * x[nvar], log = T)
+
+  ## if (sum == FALSE) return(llValues)
+  ## else return(sum(llValues1,llValues2,llValues3))
+  return(sum(llValues1,llValues2,llValues3))
+}
+
+prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
+
+out13 <- fitVSEM("run13.RData")
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModunbalDataBiasPar}Perfect model and unbalanced data with a multiplicative bias. Marginal posterior distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
+plotParameters(out13,refPars)
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModunbalDataBiasOut}Perfect model and unbalanced data with a multiplicative bias. Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
+plotOutputs(out13,refPars)
+obs <- obs.orig
+```
+
+## Model with error and unbalanced data with a multiplicative bias
+
+ * refer to Fig. (\ref{fig:errModunbalDataBiasPar}) and (\ref{fig:errModunbalDataBiasOut}) 
+ * similar to calibration with bias in data above.
+ * vegetative carbon perhaps very slightly closer to the data than when only data bias was
+   present. This may indicate compensating errors in the model and data.
+ 
+```{r include=FALSE}
+obs[,3] <- obs[,3] * 2.0
+
+newPars <- refPars$best
+names(newPars) = row.names(refPars)
+newPars["Av"]  <- 1.0
+newPars["Cr"] <- 0.0
+parSel = c(defParms, nvar)
+obsSel <- c(1,202,390,550,750,920)*2.0
+isLow = 2
+likelihood <- function(x, sum = TRUE){
+  x         <- createMixWithDefaultsOld(x, newPars, parSel)
+  predicted <- VSEM(x[-nvar], PAR)
+
+  diff       <- c(predicted[,1] - obs[,1])
+  llValues1  <- dnorm(diff, sd = pmax((abs(c(predicted[,1])) + 0.0000001) * x[nvar],0.0005), log = T)
+  diff       <- c(predicted[obsSel,2] - obs[obsSel,2])
+  llValues2  <- dnorm(diff, sd = (abs(c(predicted[obsSel,2])) + 0.0000001) * x[nvar], log = T)
+  diff       <- c(predicted[,3] - obs[,3])
+  llValues3  <- dnorm(diff, sd = (abs(c(predicted[,3])) + 0.0000001) * x[nvar], log = T)
+
+  ## if (sum == FALSE) return(llValues)
+  ## else return(sum(llValues1,llValues2,llValues3))
+  return(sum(llValues1,llValues2,llValues3))
+}
+
+prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
+
+out17 <- fitVSEM("run17.RData")
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:errModunbalDataBiasPar}Model with error and unbalanced data with a multiplicative bias. Marginal posterior distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
+plotParameters(out17,refPars)
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:errModunbalDataBiasOut}Model with error and unbalanced data with a multiplicative bias. Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
+
+plotOutputs(out17,refPars)
+obs <- obs.orig
+```
+
+# Diagnosing the issue
+
+## Comparing model output with virtual data as truth.
+
+Moving on from identifying the issue in the previous section, here we develop a tool for
+helping to diagnose at what point and to what extent having unbalanced data in Bayesian
+calibration (BC) becomes an issue when models and data are imperfect. 
+
+This is done by running a number of calibrations with perfect and imperfect models where
+the quantity and imbalance of data used increases with each calibration. Here we chose an
+increasing power series of two (2^3^,2^4^ ... 2^11^) for the increase in the quantity of
+calibration data; eight calibrations in all. In the balanced data BC case, quantities of
+NEE, vegetative carbon and soil carbon data included in the BC all increased in tandem in
+each subsequent calibration. For the unbalanced BC case, NEE and soil carbon data
+increased as before but the quantity of vegetative carbon data included in the BC was held
+fixed at six data points for each of the eight calibrations. After running the
+calibrations the VSEM was rerun with the maximum a posteriori (MAP) vector and the RMS
+difference with the 'true' data was calculated and plotted (Fig. \ref{fig:rmsMAPTruth}).
+
+The figure shows broad similarity in results except for vegetative carbon case when the
+model has an error and where there is an imbalanced in calibration data. In general, the
+RMS difference has a tendency to go down as the quantity of data included in calibration
+increases. There is also a marked grouping of results with the perfect model getting
+closer to the data than the model with the error, as might be expected. For NEE and soil
+carbon with an imperfect model, the unbalanced calibration gets closer to the data than
+the balanced calibration especially as the quantity of calibration data increases. This is
+in marked contrast to vegetative carbon where RMS differences increase significantly as
+quantity of calibration data increases when the model has an error and when there is an
+imbalanced in calibration data. This increase in RMS difference for vegetative carbon
+occurs in tandem with the decreases noted already from NEE and soil carbon. This signature
+of increasing RMS difference for the low quantity data output versus the decreasing RMS
+difference for the high quantity can be used to diagnose when large imbalances in
+calibrations data with imperfect models and data start to become an issue. In this case,
+it appears after the quantity of data included in the calibration exceeds 32 but this will
+be different for each model, likelihood function and for each dataset used in
+calibrations.
+
+
+```{r include=FALSE}
+source("gridArrangeSharedLegend.R")
+
+## csel <- map(2^{0:8},function(i) seq(1,2048,i))
+
+## loadMAP <- function(fname){
+##   load(paste(exptPath,fname,sep=""))
+##   invisible(MAP)
+## }
+
+## MAP         <- loadMAP("MAP.Rdata")
+## MAPunbal    <- loadMAP("MAPunbal.Rdata")
+## MAPErr      <- loadMAP("MAPErr.Rdata")
+## MAPErrunbal <- loadMAP("MAPErrunbal.Rdata")
+
+calcRMS <- function(istep,fldno,tselect,fld,MAPfld){
+    x          <- createMixWithDefaults(MAPfld[istep,], newPars, parSel)
+    predicted  <- VSEM(x[-nvar], PAR)
+    ofld       <- fld
+    return(sqrt(mean((predicted[tselect,fldno] - ofld[tselect,fldno])**2)))
+}
+
+tt <- tibble::tibble ( istep=1:9)
+
+newPars <- refPars$best
+names(newPars) = row.names(refPars)
+parSel = c(defParms, nvar)
+newPars["Av"]  <- 1.0
+newPars["Cr"]  <- 0.0
+BCMAPRMSObs <- tt %>% mutate(NEERMSErrunbal=map_dbl(istep,function(i) calcRMS(i,fldno=1,tselect=1:ndays,fld=referenceData,MAPfld=MAPErrunbal))) %>%
+                      mutate(CvRMSErrunbal =map_dbl(istep,function(i) calcRMS(i,fldno=2,tselect=1:ndays,fld=referenceData,MAPfld=MAPErrunbal))) %>%
+                      mutate(CsRMSErrunbal =map_dbl(istep,function(i) calcRMS(i,fldno=3,tselect=1:ndays,fld=referenceData,MAPfld=MAPErrunbal))) %>%
+                      mutate(NEERMSErr     =map_dbl(istep,function(i) calcRMS(i,fldno=1,tselect=1:ndays,fld=referenceData,MAPfld=MAPErr     ))) %>%
+                      mutate(CvRMSErr      =map_dbl(istep,function(i) calcRMS(i,fldno=2,tselect=1:ndays,fld=referenceData,MAPfld=MAPErr     ))) %>%
+                      mutate(CsRMSErr      =map_dbl(istep,function(i) calcRMS(i,fldno=3,tselect=1:ndays,fld=referenceData,MAPfld=MAPErr     ))) %>%
+                      mutate(noObs=map_int(istep,function(i) length(csel[[i]])))
+
+newPars["Av"]  <- 0.5
+newPars["Cr"]  <- 3.0
+BCMAPRMSObs <- BCMAPRMSObs %>%
+                      mutate(NEERMSunbal   =map_dbl(istep,function(i) calcRMS(i,fldno=1,tselect=1:ndays,fld=referenceData,MAPfld=MAPunbal   ))) %>%
+                      mutate(CvRMSunbal    =map_dbl(istep,function(i) calcRMS(i,fldno=2,tselect=1:ndays,fld=referenceData,MAPfld=MAPunbal   ))) %>%
+                      mutate(CsRMSunbal    =map_dbl(istep,function(i) calcRMS(i,fldno=3,tselect=1:ndays,fld=referenceData,MAPfld=MAPunbal   ))) %>%
+                      mutate(NEERMS        =map_dbl(istep,function(i) calcRMS(i,fldno=1,tselect=1:ndays,fld=referenceData,MAPfld=MAP        ))) %>%
+                      mutate(CvRMS         =map_dbl(istep,function(i) calcRMS(i,fldno=2,tselect=1:ndays,fld=referenceData,MAPfld=MAP        ))) %>%
+                      mutate(CsRMS         =map_dbl(istep,function(i) calcRMS(i,fldno=3,tselect=1:ndays,fld=referenceData,MAPfld=MAP        )))
+
+p1 <- ggplot(data = BCMAPRMSObs, aes(x=noObs)) +
+    geom_point(aes(y = NEERMS,colour="Perfect Model")) +
+    geom_line (aes(y = NEERMS,colour="Perfect Model")) +
+    geom_point(aes(y = NEERMSunbal,colour="Perfect Model UnBal Data")) +
+    geom_line (aes(y = NEERMSunbal,colour="Perfect Model UnBal Data")) +
+    geom_point(aes(y = NEERMSErr,colour="Model with Error")) +
+    geom_line (aes(y = NEERMSErr,colour="Model with Error")) +
+    geom_point(aes(y = NEERMSErrunbal,colour="Model with Error UnBal Data")) +
+    geom_line (aes(y = NEERMSErrunbal,colour="Model with Error UnBal Data"))+
+    labs(x = " ", y="RMS NEE")
+
+p2 <- ggplot(data = BCMAPRMSObs, aes(x=noObs)) +
+    geom_point(aes(y = CvRMS,colour="Perfect Model")) +
+    geom_line (aes(y = CvRMS,colour="Perfect Model")) +
+    geom_point(aes(y = CvRMSunbal,colour="Perfect Model UnBal Data")) +
+    geom_line (aes(y = CvRMSunbal,colour="Perfect Model UnBal Data")) +
+    geom_point(aes(y = CvRMSErr,colour="Model with Error")) +
+    geom_line (aes(y = CvRMSErr,colour="Model with Error")) +
+    geom_point(aes(y = CvRMSErrunbal,colour="Model with Error UnBal Data"))+
+    geom_line (aes(y = CvRMSErrunbal,colour="Model with Error UnBal Data"))+
+    labs(x = " ", y="RMS vegetative carbon")
+
+p3 <- ggplot(data = BCMAPRMSObs, aes(x=noObs)) +
+    geom_point(aes(y = CsRMS,colour="Perfect Model")) +
+    geom_line (aes(y = CsRMS,colour="Perfect Model")) +
+    geom_point(aes(y = CsRMSunbal,colour="Perfect Model UnBal Data")) +
+    geom_line (aes(y = CsRMSunbal,colour="Perfect Model UnBal Data")) +
+    geom_point(aes(y = CsRMSErr,colour="Model with Error")) +
+    geom_line (aes(y = CsRMSErr,colour="Model with Error")) +
+    geom_point(aes(y = CsRMSErrunbal,colour="Model with Error UnBal Data")) +
+    geom_line (aes(y = CsRMSErrunbal,colour="Model with Error UnBal Data"))+
+    labs(x = "Number of observations included in the calibration", y="RMS soil carbon")
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:rmsMAPTruth}Each point in the three graphs (NEE, vegetative carbon, and soil carbon) represents the RMS difference between the VSEM model and the 'truth' run with different maximum a posteriori (MAP) vectors. The MAP vector at each point is obtained from a Bayesian calibration (BC) where the quantity of data included in the BC increases in a sequence along the x-axis following the exponentiation of base two. For the balanced calibration case (red and cyan) vegetative carbon data increases in tandem with NEE and soil carbon. For the unbalanced calibration case (green and purple) the quantity of vegetative carbon data is held fixed at six data values for each point along the x-axis. The VSEM model is either 'perfect' (cyan and purple) or has a known error (red and green) relative to the 'true' data that was derived from it."}
+grid_arrange_shared_legend(p1, p2, p3, ncol = 1, nrow = 3)
+
+```
+
+## Comparing model output against "obervations"
+
+The diagnosis made in the previous section had the benefit of access to the 'true' data
+and a perfect model. Unfortunately this is never the case for real world ecological model
+calibrations. Therefore, here we have repeated the previous graph
+Fig.(\ref{fig:rmsMAPTruth}) with just the imperfect model and the imbalanced calibration,
+but with RMS differences now calculated against observations (NEE: 2048 points, vegetative
+carbon: 6 points, soil carbon: 2048 points) (Fig. \ref{fig:rmsMAPObs}). While there are
+clear differences in the RMS values versus the previous graph, as might be expected, the
+broad-scale signature of increasing RMS difference for vegetative carbon and decreasing
+RMS difference for NEE and soil carbon is retained. As before, this graph can be used to
+diagnose when the imbalanced in data is starting to interact with the erroneous model. In
+this case, as before, this occurs for a data quantity greater than 32.
+
+```{r include=FALSE}
+tt <- tibble::tibble ( istep=1:9)
+
+obsSel <- c(1,202,390,550,750,920)*2.0
+
+newPars["Av"]  <- 1.0
+newPars["Cr"]  <- 0.0
+BCMAPRMSObs <- tt %>% mutate(NEERMSErrunbal=map_dbl(istep,function(i) calcRMS(i,fldno=1,tselect=1:ndays,fld=obs,MAPfld=MAPErrunbal))) %>%
+                      mutate(CvRMSErrunbal =map_dbl(istep,function(i) calcRMS(i,fldno=2,tselect=obsSel,fld=obs,MAPfld=MAPErrunbal))) %>%
+                      mutate(CsRMSErrunbal =map_dbl(istep,function(i) calcRMS(i,fldno=3,tselect=1:ndays,fld=obs,MAPfld=MAPErrunbal))) %>%
+                      mutate(noObs=map_int(istep,function(i) length(csel[[i]])))
+
+p1 <- ggplot(data = BCMAPRMSObs, aes(x=noObs)) +
+    geom_point(aes(y = NEERMSErrunbal,colour="Model with Error UnBal Data")) +
+    geom_line (aes(y = NEERMSErrunbal,colour="Model with Error UnBal Data")) +
+    labs(x = " ", y="RMS NEE")
+
+p2 <- ggplot(data = BCMAPRMSObs, aes(x=noObs)) +
+    geom_point(aes(y = CvRMSErrunbal,colour="Model with Error UnBal Data"))+
+    geom_line (aes(y = CvRMSErrunbal,colour="Model with Error UnBal Data"))+ 
+    labs(x = " ", y="RMS vegetative carbon")
+
+p3 <- ggplot(data = BCMAPRMSObs, aes(x=noObs)) +
+    geom_point(aes(y = CsRMSErrunbal,colour="Model with Error UnBal Data")) +
+    geom_line (aes(y = CsRMSErrunbal,colour="Model with Error UnBal Data")) +
+    labs(x = "Number of observations included in the calibration", y="RMS soil carbon")
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:rmsMAPObs}Each point in the three graphs (NEE, vegetative carbon, and soil carbon) represents the RMS difference between the VSEM model and virtual observations run with different maximum a posteriori (MAP) vectors. The MAP vector at each point is obtained from a Bayesian calibration (BC) where the quantity of data included in the BC for NEE and soil carbon increases in a sequence along the x-axis following the exponentiation of base two. The quantity of vegetaive carbon data is held fixed at six for all points in the graphs. The VSEM model used has a known error relative to the virtual observations that was derived from it."}
+grid_arrange_shared_legend(p1, p2, p3, ncol = 1, nrow = 3)
+```
+
+# Changes to the Likelihood to represent model and data errors
+
+## Model with error and unbalanced perfect data with additive and multiplicative parameters to represent model error. 
+ * refer to Fig. (\ref{fig:errModunbalDatamodLikePar}) and (\ref{fig:errModunbalDatamodLikeOut})
+ * KEXT, LUE, Cv, Cs and error-coeffVar are now significantly closer to the 'true' values. tauS is not but is much more uncertain. 
+ * vegetative carbon much improved 
+     * 5 out of 6 data points are now inside the posterior confidence interval
+     * 50% quantile line now much closer to the 'true' line.
+
+ 
+```{r include=FALSE}
+addPars                   <- refPars
+addPars[nvar+1,]          <- c(1.0, 0.1, 2.0)
+addPars[nvar+2,]          <- c(1.0, 0.1, 2.0)
+addPars[nvar+3,]          <- c(0.0, -0.01, 0.01)
+addPars[nvar+4,]          <- c(0.0, -1.0, 1.0)
+rownames(addPars)[nvar+1]   <- "modmultNEE"
+rownames(addPars)[nvar+2]   <- "modmultCs"
+rownames(addPars)[nvar+3]   <- "modaddNEE"
+rownames(addPars)[nvar+4]   <- "modaddCs"
+newPars <- addPars$best
+names(newPars) = row.names(addPars)
+newPars["Av"]  <- 1.0
+newPars["Cr"]  <- 0.0
+parSel = c(defParms, nvar,nvar+1,nvar+2,nvar+3,nvar+4)
+npar <- length(parSel)
+obsSel <- c(1,202,390,550,750,920)*2
+isLow = 2
+likelihood <- function(x, sum = TRUE){
+  x         <- createMixWithDefaults(x, newPars, parSel)
+  predicted <- VSEM(x[1:(nvar-1)], PAR)
+
+  diff       <- c((predicted[,1]*x[nvar+1] + x[nvar+3]) - obs[,1])
+  llValues1  <- dnorm(diff, sd = pmax((abs(c(predicted[,1])) + 0.0000001) * x[nvar],0.0005), log = T)
+  diff       <- c(predicted[obsSel,2] - obs[obsSel,2])
+  llValues2  <- dnorm(diff, sd = (abs(c(predicted[obsSel,2])) + 0.0000001) * x[nvar], log = T)
+  diff       <- c(((predicted[1,3] + (predicted[,3] - predicted[1,3])*x[nvar+2]) + x[nvar+4]) - obs[,3])
+  llValues3  <- dnorm(diff, sd = (abs(c(predicted[,3])) + 0.0000001) * x[nvar], log = T)
+
+  ## if (sum == FALSE) return(llValues)
+  ## else return(sum(llValues1,llValues2,llValues3))
+  return(sum(llValues1,llValues2,llValues3))
+}
+
+prior         <- createUniformPrior(lower = addPars$lower[parSel], upper = addPars$upper[parSel])
+out15 <- fitVSEM("run15.RData",iter=1200000, params=addPars)
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:errModunbalDatamodLikePar}Model with error and unbalanced data with additive and multiplicative parameters to represent model error. Marginal posterior distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
+plotParametersEsys(out15,addPars)
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:errModunbalDatamodLikeOut}Model with error and unbalanced data with additive and multiplicative parameters to represent model error. Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
+plotOutputsEsys(out15,addPars)
+```
+
+## Perfect model and and unbalanced data with a multiplicative bias and additive and multiplicative parameters to represent the bias.
+  * refer to Fig. (\ref{fig:perModunbalDataBiasmodLikePar}) and (\ref{fig:perModunbalDataBiasmodLikeOut}) 
+  * many model parameters (KEXT, LUE, tauV, tauS, initial Cv) much closer to 'true' values
+  * multiplicative bias multiplication parameter modmultCs centred around 2.25 which is close to the multiplication factor applied to the data. 
+  * NEE and soil carbon close to the data and within the predictive interval.
+  * vegetative carbon pool much improved with all data points covered by the posterior credible interval.
+ 
+```{r include=FALSE}
+obs[,3] <- obs[,3] * 2.0
+
+addPars                   <- refPars
+addPars[nvar+1,]          <- c(1.0, 0.1, 3.0)
+addPars[nvar+2,]          <- c(1.0, 0.1, 3.0)
+addPars[nvar+3,]          <- c(0.0, -0.01, 0.01)
+addPars[nvar+4,]          <- c(0.0, -1.0, 1.0)
+rownames(addPars)[nvar+1]   <- "modmultNEE"
+rownames(addPars)[nvar+2]   <- "modmultCs"
+rownames(addPars)[nvar+3]   <- "modaddNEE"
+rownames(addPars)[nvar+4]   <- "modaddCs"
+newPars <- addPars$best
+names(newPars) = row.names(addPars)
+parSel = c(defParms, nvar,nvar+1,nvar+2,nvar+3,nvar+4)
+npar <- length(parSel)
+obsSel <- c(1,202,390,550,750,920)*2
+isLow = 2
+likelihood <- function(x, sum = TRUE){
+  x         <- createMixWithDefaultsOld(x, newPars, parSel)
+  predicted <- VSEM(x[1:(nvar-1)], PAR)
+
+  diff       <- c((predicted[,1]*x[nvar+1] + x[nvar+3]) - obs[,1])
+  llValues1  <- dnorm(diff, sd = pmax((abs(c(predicted[,1])) + 0.0000001) * x[nvar],0.0005), log = T)
+  diff       <- c(predicted[obsSel,2] - obs[obsSel,2])
+  llValues2  <- dnorm(diff, sd = (abs(c(predicted[obsSel,2])) + 0.0000001) * x[nvar], log = T)
+  diff       <- c(((predicted[1,3] + (predicted[,3] - predicted[1,3])*x[nvar+2]) + x[nvar+4]) - obs[,3])
+  llValues3  <- dnorm(diff, sd = (abs(c(predicted[,3])) + 0.0000001) * x[nvar], log = T)
+
+  ## if (sum == FALSE) return(llValues)
+  ## else return(sum(llValues1,llValues2,llValues3))
+  return(sum(llValues1,llValues2,llValues3))
+}
+
+prior         <- createUniformPrior(lower = addPars$lower[parSel], upper = addPars$upper[parSel])
+
+out16 <- fitVSEM("run16.RData",params=addPars)
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModunbalDataBiasmodLikePar}Perfect model and and unbalanced data with a multiplicative bias and additive and multiplicative parameters to represent the bias. Marginal posterior distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
+plotParametersEsys(out16,addPars)
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModunbalDataBiasmodLikeOut}Perfect model and and unbalanced data with a multiplicative bias and additive and multiplicative parameters to represent the bias. Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
+plotOutputsEsys(out16,addPars)
+obs <- obs.orig
+```
+
+## Model with error and and unbalanced data with a multiplicative bias and additive and multiplicative parameters to represent model error and the data bias.
+
+```{r include=FALSE}
+obs[,3] <- obs[,3] * 2.0
+   
+addPars                   <- refPars
+addPars[nvar+1,]          <- c(1.0, 0.1, 3.0)
+addPars[nvar+2,]          <- c(1.0, 0.1, 3.0)
+addPars[nvar+3,]          <- c(0.0, -0.01, 0.01)
+addPars[nvar+4,]          <- c(0.0, -1.0, 1.0)
+rownames(addPars)[nvar+1]   <- "modmultNEE"
+rownames(addPars)[nvar+2]   <- "modmultCs"
+rownames(addPars)[nvar+3]   <- "modaddNEE"
+rownames(addPars)[nvar+4]   <- "modaddCs"
+newPars <- addPars$best
+names(newPars) = row.names(addPars)
+newPars["Av"]  <- 1.0
+newPars["Cr"]  <- 0.0
+parSel = c(defParms, nvar,nvar+1,nvar+2,nvar+3,nvar+4)
+npar <- length(parSel)
+obsSel <- c(1,202,390,550,750,920)*2
+isLow = 2
+likelihood <- function(x, sum = TRUE){
+  x         <- createMixWithDefaultsOld(x, newPars, parSel)
+  predicted <- VSEM(x[1:(nvar-1)], PAR)
+
+  diff       <- c((predicted[,1]*x[nvar+1] + x[nvar+3]) - obs[,1])
+  llValues1  <- dnorm(diff, sd = pmax((abs(c(predicted[,1])) + 0.0000001) * x[nvar],0.0005), log = T)
+  diff       <- c(predicted[obsSel,2] - obs[obsSel,2])
+  llValues2  <- dnorm(diff, sd = (abs(c(predicted[obsSel,2])) + 0.0000001) * x[nvar], log = T)
+  diff       <- c(((predicted[1,3] + (predicted[,3] - predicted[1,3])*x[nvar+2]) + x[nvar+4]) - obs[,3])
+  llValues3  <- dnorm(diff, sd = (abs(c(predicted[,3])) + 0.0000001) * x[nvar], log = T)
+
+  ## if (sum == FALSE) return(llValues)
+  ## else return(sum(llValues1,llValues2,llValues3))
+  return(sum(llValues1,llValues2,llValues3))
+}
+
+prior         <- createUniformPrior(lower = addPars$lower[parSel], upper = addPars$upper[parSel])
+
+out18 <- fitVSEM("run18.RData",iter=1200000,params=addPars)
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:errModunbalDataBiasmodLikePar}Model with error and and unbalanced data with a multiplicative bias and additive and multiplicative parameters to represent model error and the data bias. Marginal posterior distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
+plotParametersEsys(out18,addPars)
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:errModunbalDataBiasmodLikeOut}Model with error and and unbalanced data with a multiplicative bias and additive and multiplicative parameters to represent model error and the data bias. Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
+plotOutputsEsys(out18,addPars)
+obs <- obs.orig
+```
+
+ * refer to Fig. (\ref{fig:errModunbalDataBiasmodLikePar}) and (\ref{fig:errModunbalDataBiasmodLikeOut}) 
+ * as above many parameters improved (KEXT, LUE, tauS, initial Cv)
+ * modmultCs value centered ~1.8 compromise between value in Fig. (\ref{fig:perModunbalDataBiasmodLikePar}) for bias only and Fig. (\ref{fig:errModunbalDatamodLikePar}) model error only. 
+ * vegetative pool much improved with 
+     * 5 out of 6 data points within posterior credible interval
+     * 50% quantile line now much closer to the 'true' line.
+     * similar to Fig. (\ref{fig:errModunbalDatamodLikeOut}) 
