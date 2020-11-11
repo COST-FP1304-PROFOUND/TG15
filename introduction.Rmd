@@ -8,67 +8,31 @@ In principle data fusion is conceptually straightforward. When writing down a st
 
 A common observation when combining unbalanced data is that the outputs from data fusion (e.g. calibrated model parameters) are virtually identical to the results achieved by fitting the model to the high-volume data by itself.
 Since each data point is usually modeled as an independent piece of
-data in a Likelihood, the influence of the sparse observations can often be overwhelmed by the higher frequency data (Cameron et al (in review 2018). 
+information in a Likelihood, the influence of the sparse observations can often be overwhelmed by the higher frequency data (Cameron et al (in review 2018). 
 In essence, the data fusion ignores the low volume data, which gets swamped out by the much larger sample size of the high volume data.
 Needless to say, this can be disappointing as the lower-volume data often represents considerable labor and, as noted earlier, is often collected to ensure that the model is getting the right answer for the wrong reason. 
 As more and more data becomes available this issue of extremely imbalanced datasets is likely to worsen significantly. For example, NASA's earth observation system is expected to grow by an order of magnitude, from an already overwhelming ~5PB/yr in 2018-2020 to a staggering ~50PB/yr, as soon as 2022 (https://earthdata.nasa.gov/eosdis/cloud-evolution).
 
-To add insult to injury, it is also often the case that the addition of high-volume data can cause the predictions for other, low-volume output variables to perform worse. For example.. <<add examples>>.
+To add insult to injury, it is also often the case that the addition of high-volume data can cause the predictions for other, low-volume output variables to perform worse. **For example.. <<add examples>>.**
 
 
-In response to data fusion gone awry, a number of _ad hoc_ solutions have been employed. For example, one might simply thin the high volume data until the data constraints are more balanced (CITE + example). Another common solution is to average the data over time or space, for example by aggregating high-frequency sensor data up to a daily, monthly, or annual number.
-Richardson, Moore, Riciutto << add more examples >>
-While neither of these approaches is technically wrong, they are definitely disappointing, as they involve throwing out data which results in a loss of information. Another option that has been employed is to apply weights to the different data models within the overall Likelihood, with the most common option being to downweight the high-volume data so that the different data models are more balanced. For example, Medvigy.... Weighting likelihoods has the intuitive appeal of retaining every observation, but it has the more subtle issue of not being grounded in probability theory, which is the basis for both Likelihood and Bayesian statistics. Mathmatically there's also nothing stopping one from 'upweighting' datasets, which amounts to pretending that you have more data than you actually do, leading to falsely overconfident parameter estimates and predictions. As a point of fact, in all of these options (thinning, averaging, weighting) the choices made shift not only the mean, but also have large impacts on the parameter uncertainties and model confidence intervals.
+In response to data fusion gone awry, a number of _ad hoc_ solutions have been employed. For example, one might simply thin the high volume data until the data constraints are more balanced (**CITE + example**). Another common solution is to average the data over time or space, for example by aggregating high-frequency sensor data up to a daily, monthly, or annual number.
+**Richardson, Moore, Riciutto << add more examples >>**
+While neither of these approaches is technically wrong, they are definitely disappointing, as they involve throwing out data which results in a loss of information. Another option that has been employed is to apply weights to the different data models within the overall Likelihood, with the most common option being to downweight the high-volume data so that the different data models are more balanced. **For example, Medvigy....** Weighting likelihoods has the intuitive appeal of retaining every observation, but it has the more subtle issue of not being grounded in probability theory, which is the basis for both Likelihood and Bayesian statistics. Mathematically there's also nothing stopping one from 'upweighting' datasets, which amounts to pretending that you have more data than you actually do, leading to falsely overconfident parameter estimates and predictions. As a point of fact, in all of these options (thinning, averaging, weighting) the choices made shift not only the mean, but also have large impacts on the parameter uncertainties and model confidence intervals.
 
 The big problem with these approaches, whether thinning, averaging, or weighting data, is that they are all very subjective. There is a full continuum of options available, from working with data at its raw frequency all the way up to averaging all the data to a single point, and the outcome of the analysis will change, often dramatically, depending on the averaging/thinning/weighting one chooses. Indeed, practitioners are resorting to thinning/averaging/weighting precisely because it changes the outcome, but there's currently no objective advice on how to do so.
 
-More objective way to weight data...
+One possible path forward is to look for a more objective way to weight data.
+In this regard, some have pointed to the "independence" assumption and suggested that greater attention needs to be paid to the information content of a dataset (Dietze 2017). Spectral analyses of high-frequency environmental data, such as eddy covariance, often show distinct peaks at the annual and daily scale, reflecting strong seasonal and diurnal cycles (Dietze et al. 2011, STOY CITE). In such cases aggregating data that's at a high frequency (e.g. 1 observation per minute) to 5 minute data will retain almost the same information content but the sample size will be cut by five. While aggregating is ad hoc, formally accounting for non-independence of observations, for example by accounting for autocorrelation in a Likelihood, is not (**CITE Examples**). Because modeling spatial and temporal autocorrelation can be computationally demanding, others have sought to approximate this by weighting data models based on calculations of effective sample size (Fer et al. 2018).
 
-by Information content...
-Fer et al 2018, Dietze 2017
+While autocorrelation is probably part of the challenge of working with high-volume data, there's reason to believe that its not the only issue at hand. For example, autocorrelation doesn't explain why calibration to a high-volume dataset would cause a model to perform worse at predicting a different output variable. Also, many high-volume data sources have little to no replication. For example, is an eddy covariance tower that produces 17520 half-hourly observations per year count as n=17520 data points or n=1 tower? If there were a whole population of sensors we could calculate a sample mean and variance. There is every reason to believe that any one sensor will be different from the mean, but with only one sensor there is no way of knowing what the mean is or how different the data we have is from that mean.
 
- Main issue
-* folks often respond to these with ad hoc 'bandaids'. Failure to investigate the underlying issue and address with solutions that have a degree of objectivity and don't violate statistical principles.
-
-  * 
-  * 
-  * 
-	
- What is the effective information content (IC) of observations
- (possibly include or is this really a different issue? - discuss
- Mike/Marcel)
-
-  * One eddy covariance tower with 17000 measurements count this as n = 1 or n = 17000 obs?
-  * Aggregate 5 min data to 10 min retain essentially same IC but sample size halved!
-  * Spectral analysis of eddy covariance NEE data two peaks: annual(seasonal) and diurnal
-  * Often assume in BC that each data*point provides independent information
-  * If biases in data or model errors are not independent
-
- To-date solutions generally ad hoc and/or arbitrary 
-  
-  * Literature review...
-  * Ignore but then models over-fitted and uncertainty underestimated
-  * Apply arbitrary weights to rebalance influence of data in BC
-  * Thin the number of eddy covariance obs
-      * throwing away useful information
-
- Purpose of paper:
- 
-  1. To identify the issue of using unbalanced data in parameter calibration of ecosystem models using artificial experiments. 
-  2. Develop a general methodology for identifying whether and where the issue becomes a problem.
-  3. Start to explore the simplest modifications to the likelihood to represent model structural error and data bias to help ameliorate the issue identified in (1). 
-
- Artificial experiments:
- 
-  * Developed a very simple process-besed ecosystem model (VSEM) as a testbed for
-    experiments. Simple enough that results are easily
-    understood. Sufficiently complex that we can be confident that the
-    model/data issues identified here would also been seen in more
-    complex/realistic process-based ecosystem models. 
-  * Calibration data model's own output to control:
-	1. test influence of model and data perfection/imperfection
-	2.  test influence of balance/unbalance of data in the calibration
+The goal of this paper is to use simulated data experiments to identify more clearly the different issues associated with fusing unbalanced data in parameter calibration. We aim to develop a general methodology for identifying whether and where the issue becomes a problem, and then to start to explore simple modifications to the Likelihood to see to what extent they can help ameliorate the identified issue. For these simulated data experiments we developed a very simple process-based ecosystem model (VSEM) as a testbed. Our aim is to present a model that simple enough that results are easily understood, but sufficiently complex that we can be confident that the model/data issues identified here would also been seen in more complex/realistic process-based ecosystem models. By calibrating the model to variations of it's own output (with added observation error), we are able to experimentally separate the influence of unbalanced data in the calibration from the influence of artificially-introduced errors in the data or the model. Overall we find that model and data errors appear to be at the root of many of the issues attributed to unbalanced data. However, it is the presence of multiple constraints, and the power that comes from high-volume data, that together shine a light on errors that otherwise often go unnoticed. Because all models are wrong (but some are useful), simply "fixing the model" is not always sufficient given the statistical power big data provides. We show that simple fixes that account for model and data bias can lead to improvements in prediction, but point to the need for research.
 
 INTRO CITATIONS (to be moved)
+
+Dietze et. al. 2011. Identifying the time scales that dominate model error: A North American synthesis of the spectral properties of ecosystem models. JGR-Biogeosciences 116, G04029, doi:10.1029/2011JG00166
+
+Dietze M. 2017. Ecological Forecasting. Princeton University Press. ISBN: 9780691160573
 
 Medlyn, B., Zaehle, S., De Kauwe, M. et al. Using ecosystem experiments to improve vegetation models. Nature Clim Change 5, 528–534 (2015). https://doi.org/10.1038/nclimate2621
