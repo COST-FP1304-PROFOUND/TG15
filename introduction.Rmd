@@ -1,23 +1,15 @@
 # Introduction
 
-Big Picture
-* Era of rapid change (transients). Urgent need to better understand and predict natural systems
-* Era of big data -- unprecendented capacity to do so
-* Multiple constraints incredibly important to getting the right answer for the right reason (Medlyn)
-* Large push to do more data fusion (= statistical assimilation of multiple constraints), particularly within process models
+We live in an era of rapid environmental change, with multiple drivers of ecosystem processes shifting simultaneously (climate, CO2, nutrient deposition, pollution, species introductions, habitat destruction) and continuously. Because of this the natural systems that we seek to understand, manage, and conserve are in a period dominated by transient conditions and will continue to be so for the foreseeable future. In the face of this change there is an urgent need for ecologists and other environmental scientists to be able to better understand and predict both these transient dynamics and their long-term implications (Dietze et al. 2018). Fortunately, in many cases we are aided in this endeavor by an increasing volume, variety, and velocity of environmental data (CITE LaDeau, Jack Williams, Keck review, etc.) as well as increasingly sophisticated models (model review CITE?). In other words, while we face unprecedented challenges, we also have unprecedented capacity to address those challenges.
 
-We live in an era of rapid environmental change, with multiple drivers of ecosystem processes shifting simultaneously (climate, CO2, nutrient deposition, pollution, species introductions, habitat destruction) and continuously. Because of this the natural systems that we seek to understand, manage, and conserve are in a period dominated by transient conditions and will continue to be so for the foreseeable future. In the face of this change there is an urgent need for ecologists and other environmental scientists to be able to better understand and predict both these transient dynamics and their long-term implications (Dietze et al. 2018). Fortunately, in many cases we are aided in this endeavor by an increasing volume, variety, and velocity of environmental data (CITE LaDeau, Jack Williams, RS, etc.) as well as increasingly sophisticated models (model review CITE?). 
+As the variety of data available increases it is often the case that there are multiple types of data available to constrain our understanding of ecological processes, state variables, and/or model parameters.  Sometimes these are alternative ways of measuring the same thing (e.g. field versus remotely sensed estimates of leaf area). In other instances they are observations of different parts of a coupled problem. Most ecological processes are complex, and thus ecological models in general, and mechanistic models in particular, often need to predict multiple interacting variables, such as different species, life-history stages, demographic processes, or biogeochemical pools and fluxes. In both of these cases, there is information to be gained through _data fusion_ -- the use of multiple different data types to constrain a single model. Using multiple constraints is often essential; very often no single data type provides us with a complete understanding of a process.  We need to confront different parts of a model with different observations to make sure we are getting the right answer for the right reason, and have not just calibrated a model to produce the "right" answer for one variable through a series of compensating errors (Medlyn et al. 2015)
 
+In principle data fusion is conceptually straightforward. When writing down a statistical Likelihood for either a frequentist (maximum likelihood) or Bayesian model, one writes down multiple data models that are are connected to the same underlying process model. In practice, there are a number of places where things can go awry (Zipkin, etc.). One particularly common challenge is the need to combine unbalanced datasets, where one or more data types is available in a much larger volume than the other data constraints. This frequently occurs when combining low-volumes of manually-collected field data with high-volumes automatically-collected data collected either from in situ sensors or via remote sensing. A common observation in this situation is that the output from a data fusion analysis (e.g. calibrated model parameters) is virtually identical to the results achieved by fitting the model to the high-volume data by itself. In essence, the data fusion essentially ignores the low volume data, which gets swamped out by the much larger sample size of the high volume data. This can be disappointing as the lower-volume data often represents considerable labor and was often collected, as noted earlier, to ensure that the model is getting the right answer for the wrong reason. To add insult to injury, it is also often the case that the addition of the high-volume data can cause the predictions of the low-volume variable to perform worse. For example.. <<add examples>>.
 
-
-
+Because.. 
 
  Main issue
-
-* In principle data fusion is straightforward -- one writes down statistical data models (Likelihoods) for each data constraint that are each linked to the same underlying process model (Zipkin, etc.)
-* In practice, there are some real 'gotchas' where things can go awry, and folks often respond to these with ad hoc 'bandaids'. Failure to investigate the underlying issue and address with solutions that have a degree of objectivity and don't violate statistical principles.
-
-* One of the most common 'gotchas' occurs when one has unbalanced data...
+* folks often respond to these with ad hoc 'bandaids'. Failure to investigate the underlying issue and address with solutions that have a degree of objectivity and don't violate statistical principles.
 
   * Because of the difference in cost in collecting automatic
     measurements such as eddy covariance data and manual measurements
@@ -67,3 +59,7 @@ We live in an era of rapid environmental change, with multiple drivers of ecosys
   * Calibration data model's own output to control:
 	1. test influence of model and data perfection/imperfection
 	2.  test influence of balance/unbalance of data in the calibration
+
+INTRO CITATIONS (to be moved)
+
+Medlyn, B., Zaehle, S., De Kauwe, M. et al. Using ecosystem experiments to improve vegetation models. Nature Clim Change 5, 528–534 (2015). https://doi.org/10.1038/nclimate2621
