@@ -38,3 +38,4 @@
 ## Model with error and balanced data doesn’t show that the model has an error. 
  * Model is able to match the data quite well so doesn't 'uncover' the serious model structural error. 	 
  
+# References

@@ -15,6 +15,7 @@ output:
 #    includes:
 #      in_header: mystyles.sty
 #  word_document: default
+bibliography: bibliography.bibtex
 ---
  
 ```{r include=FALSE}
@@ -26,8 +27,8 @@ CLEAN.BUILD = FALSE
 
 ## PLOT.DIAGNOSTICS = TRUE
 defParms = c(1,3,5,6,9,10) 
-#exptPath = "RDataWorkingDellLong/"
-exptPath = "~/OneDrive - NERC/COST/TG15/RDataWorkingMSILong/"
+exptPath = "RDataWorkingMSILong/"
+#exptPath = "~/OneDrive - NERC/COST/TG15/RDataWorkingMSILong/"
 ```
 
 ```{r child = 'introduction.Rmd'}
