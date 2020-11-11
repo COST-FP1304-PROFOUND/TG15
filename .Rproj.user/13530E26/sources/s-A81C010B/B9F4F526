@@ -1,7 +1,7 @@
 {
     "id": "B9F4F526",
-    "path": "C:/Users/minunno/Downloads/TG15-drcWorking/runCode.r",
-    "project_path": null,
+    "path": "C:/Users/minunno/GitHub/TG15/runCode.r",
+    "project_path": "runCode.r",
     "type": "r_source",
     "hash": "3013769347",
     "contents": "",
@@ -11,11 +11,11 @@
     "relative_order": 5,
     "properties": {},
     "folds": "",
-    "lastKnownWriteTime": 1605118019,
+    "lastKnownWriteTime": 1605119450,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1605118019,
+    "last_content_update": 1605119450958,
     "read_only": false,
     "read_only_alternatives": []
 }
