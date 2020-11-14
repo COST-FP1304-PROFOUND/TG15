@@ -555,8 +555,9 @@ coef17 <- lm(pCor1$cors~pCor17$cors)
 pCorAll <- ggplot()+
   xlim(-1,1) + ylim(-1,1) +xlab("correltions all runs") + ylab("correltions run1") +
   geom_point(aes(x=pCor2$cors,y=pCor1$cors)) +
-  geom_abline(intercept = coef2$coefficients[1],slope = coef2$coefficients[2]) + 
+  geom_abline(intercept = coef2$coefficients[1],slope = coef2$coefficients[2]) +
   geom_point(aes(x=pCor3$cors,y=pCor1$cors),col=2) +
+  geom_abline(intercept = 0,slope = 1) +
   geom_abline(intercept = coef3$coefficients[1],slope = coef3$coefficients[2],col=2) +
   geom_point(aes(x=pCor5$cors,y=pCor1$cors),col=3) +
   geom_abline(intercept = coef5$coefficients[1],slope = coef5$coefficients[2],col=3) +
@@ -566,7 +567,13 @@ pCorAll <- ggplot()+
   geom_abline(intercept = coef13$coefficients[1],slope = coef13$coefficients[2],col=5) +
   geom_point(aes(x=pCor17$cors,y=pCor1$cors),col=6) +
   geom_abline(intercept = coef17$coefficients[1],slope = coef17$coefficients[2],col=6)
-  
+  # 
+  # 
+
+
+
+pCorAll
+
 
 
 png("CorrFig1.png",width = 1000,height = 1000)

@@ -8,3 +8,4 @@ TG15-VSEM_cache
 *.RData
 *.tex
 *#
+.Rproj.user
