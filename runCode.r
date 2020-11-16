@@ -85,7 +85,7 @@ MAP  <- calcMAP("MAP.Rdata")
 plotParameters(out1,refPars)
 plotOutputs(out1,refPars)
 
-pCor1 <- plotCor(out1,parSel,refPars,"run1")
+pCor1 <- plotCor(out1,parSel,refPars,"perModbalDataPar")
 pCor1
 
 
@@ -120,7 +120,7 @@ MAPunbal <- calcMAP("MAPunbal.Rdata")
 plotParameters(out2,refPars)
 plotOutputs(out2,refPars)
 
-pCor2 <- plotCor(out2,parSel,refPars,"run2")
+pCor2 <- plotCor(out2,parSel,refPars,"perModunbalDataOut")
 pCor2
 
 ## Likelihood: Gaussian 2048 obs for each of NEE, Cv and Cs
@@ -155,7 +155,7 @@ MAPErr <- calcMAP("MAPErr.Rdata")
 
 plotParameters(out3,refPars)
 plotOutputs(out3,refPars)
-pCor3 <- plotCor(out3,parSel,refPars,"run3")
+pCor3 <- plotCor(out3,parSel,refPars,"errModbalDataPar")
 pCor3
 
 newPars <- refPars$best
@@ -190,7 +190,7 @@ MAPErrunbal <- calcMAP("MAPErrunbal.Rdata")
 plotParameters(out5,refPars)
 plotOutputs(out5,refPars)
 
-pCor5 <- plotCor(out5,parSel,refPars,"run5")
+pCor5 <- plotCor(out5,parSel,refPars,"errModunbalDataPar")
 pCor5
 
 obs.orig     <- obs
@@ -223,7 +223,7 @@ out12 <- fitVSEM("run12.RData")
 plotParameters(out12,refPars)
 plotOutputs(out12,refPars)
 obs <- obs.orig
-pCor12 <- plotCor(out12,parSel,refPars,"run12")
+pCor12 <- plotCor(out12,parSel,refPars,"perModbalDataBiasOut")
 pCor12
 
 
@@ -256,7 +256,7 @@ out13 <- fitVSEM("run13.RData")
 plotParameters(out13,refPars)
 plotOutputs(out13,refPars)
 obs <- obs.orig
-pCor13 <- plotCor(out13,parSel,refPars,"run13")
+pCor13 <- plotCor(out13,parSel,refPars,"perModunbalDataBiasPar")
 pCor13
 
 
@@ -293,7 +293,7 @@ plotParameters(out17,refPars)
 plotOutputs(out17,refPars)
 obs <- obs.orig
 
-pCor17 <- plotCor(out17,parSel,refPars,"run17")
+pCor17 <- plotCor(out17,parSel,refPars,"errModunbalDataBiasPar")
 pCor17
 
 
@@ -448,7 +448,7 @@ out15 <- fitVSEM("run15.RData",iter=1200000, params=addPars)
 
 plotParametersEsys(out15,addPars)
 plotOutputsEsys(out15,addPars)
-pCor15 <- plotCor(out15,parSel,addPars,"run15")
+pCor15 <- plotCor(out15,parSel,addPars,"errModunbalDatamodLikePar")
 pCor15
 
 
@@ -492,7 +492,7 @@ out16 <- fitVSEM("run16.RData",params=addPars)
 plotParametersEsys(out16,addPars)
 plotOutputsEsys(out16,addPars)
 obs <- obs.orig
-pCor16 <- plotCor(out16,parSel,addPars,"run16")
+pCor16 <- plotCor(out16,parSel,addPars,"perModunbalDataBiasmodLikePar")
 pCor16
 
 
@@ -539,7 +539,7 @@ plotParametersEsys(out18,addPars)
 plotOutputsEsys(out18,addPars)
 obs <- obs.orig
 
-pCor18 <- plotCor(out18,parSel,addPars,"run18")
+pCor18 <- plotCor(out18,parSel,addPars,"errModunbalDataBiasmodLikePar")
 pCor18
 
 
@@ -552,33 +552,66 @@ coef12 <- lm(pCor1$cors~pCor12$cors)
 coef13 <- lm(pCor1$cors~pCor13$cors)
 coef17 <- lm(pCor1$cors~pCor17$cors)
 
-pCorAll <- ggplot()+
-  xlim(-1,1) + ylim(-1,1) +xlab("correltions all runs") + ylab("correltions run1") +
-  geom_point(aes(x=pCor2$cors,y=pCor1$cors)) +
-  geom_abline(intercept = coef2$coefficients[1],slope = coef2$coefficients[2]) +
-  geom_point(aes(x=pCor3$cors,y=pCor1$cors),col=2) +
-  geom_abline(intercept = 0,slope = 1) +
-  geom_abline(intercept = coef3$coefficients[1],slope = coef3$coefficients[2],col=2) +
-  geom_point(aes(x=pCor5$cors,y=pCor1$cors),col=3) +
-  geom_abline(intercept = coef5$coefficients[1],slope = coef5$coefficients[2],col=3) +
-  geom_point(aes(x=pCor12$cors,y=pCor1$cors),col=4) +
-  geom_abline(intercept = coef12$coefficients[1],slope = coef12$coefficients[2],col=4) +
-  geom_point(aes(x=pCor13$cors,y=pCor1$cors),col=5) +
-  geom_abline(intercept = coef13$coefficients[1],slope = coef13$coefficients[2],col=5) +
-  geom_point(aes(x=pCor17$cors,y=pCor1$cors),col=6) +
-  geom_abline(intercept = coef17$coefficients[1],slope = coef17$coefficients[2],col=6)
-  # 
-  # 
+lmCoef <- data.table(
+  inter=c(coef2$coefficients[1],coef3$coefficients[1],coef5$coefficients[1],
+          coef12$coefficients[1],coef13$coefficients[1],coef17$coefficients[1]),
+  slope=c(coef2$coefficients[2],coef3$coefficients[2],coef5$coefficients[2],
+          coef12$coefficients[2],coef13$coefficients[2],coef17$coefficients[2]),
+  runs = c("perModunbalDataOut","errModbalDataPar",
+           "errModunbalDataPar","perModbalDataBiasOut","perModunbalDataBiasPar",
+           "errModunbalDataBiasPar")        
+)
+
+corsData1 <- data.table(
+  corCoef = c(pCor1$cors, pCor2$cors, pCor3$cors, pCor5$cors,
+           pCor12$cors, pCor13$cors, pCor17$cors),
+  runs = rep(c("perModbalDataPar","perModunbalDataOut","errModbalDataPar",
+  "errModunbalDataPar","perModbalDataBiasOut","perModunbalDataBiasPar",
+  "errModunbalDataBiasPar"),each=length(pCor1$cors))
+)
+corsData2 <- data.table(
+  corCoef = c(pCor15$cors, pCor16$cors, pCor18$cors),
+  runs = rep(c("errModunbalDatamodLikePar",
+               "perModunbalDataBiasmodLikePar",
+               "errModunbalDataBiasmodLikePar"),
+             each=length(pCor15$cors))
+)
 
 
+pCorAllData <- cbind(corsData1[runs!="perModbalDataPar"],
+                     refRun=corsData1[runs=="perModbalDataPar"]$corCoef)
+
+pCorAll <- ggplot(pCorAllData,aes(x=corCoef,y=refRun,col=runs))+
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  xlim(-1,1) + ylim(-1,1) +xlab("correltions all runs") + ylab("cor perModbalDataPar") 
+
+
+
+library(ggplot2)
+library(ggridges)
+
+pRidgeCor <- ggplot(corsData1, 
+  aes(x = corCoef, y = runs, fill = stat(x))
+) +
+  geom_density_ridges_gradient(scale = 3, size = 0.3, rel_min_height = 0.01) +
+  scale_fill_viridis_c(name = "", option = "C") +
+  labs(title = 'Correlation Coefficient distributions') 
+
+
+pRidgeCor
 
 pCorAll
 
+png("summaryCorr.png",width = 800,height = 400)
+grid_arrange_shared_legend(pCorAll,pRidgeCor,
+                           ncol = 2, nrow = 1)
+dev.off()
 
 
 png("CorrFig1.png",width = 1000,height = 1000)
 grid_arrange_shared_legend(pCor1$pCor, pCor2$pCor, pCor3$pCor, pCor5$pCor,
-                           pCor12$pCor, pCor13$pCor, pCor17$pCor,pCorAll,
+                           pCor12$pCor, pCor13$pCor, pCor17$pCor,
                            ncol = 3, nrow = 3)
 dev.off()
 
