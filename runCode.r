@@ -544,6 +544,9 @@ pCor18
 
 
 
+library(data.table)
+library(ggplot2)
+library(ggridges)
 
 coef2 <- lm(pCor1$cors~pCor2$cors)
 coef3 <- lm(pCor1$cors~pCor3$cors)
@@ -588,15 +591,14 @@ pCorAll <- ggplot(pCorAllData,aes(x=corCoef,y=refRun,col=runs))+
 
 
 
-library(ggplot2)
-library(ggridges)
-
+###correlation distribution
 pRidgeCor <- ggplot(corsData1, 
   aes(x = corCoef, y = runs, fill = stat(x))
 ) +
   geom_density_ridges_gradient(scale = 3, size = 0.3, rel_min_height = 0.01) +
   scale_fill_viridis_c(name = "", option = "C") +
   labs(title = 'Correlation Coefficient distributions') 
+
 
 
 pRidgeCor
@@ -620,3 +622,57 @@ png("CorrFig2.png",width = 1500)
 grid_arrange_shared_legend(pCor15$pCor, pCor16$pCor, pCor18$pCor, ncol = 3, nrow = 1)
 dev.off()
 
+
+
+
+
+
+####parameter ditribution
+runLab <- c("perModbalDataPar","perModunbalDataOut","errModbalDataPar",
+  "errModunbalDataPar","perModbalDataBiasOut","perModunbalDataBiasPar",
+  "errModunbalDataBiasPar","errModunbalDatamodLikePar",
+  "perModunbalDataBiasmodLikePar","errModunbalDataBiasmodLikePar")
+runID <- c("run1", "run2", "run3", "run5",
+           "run12", "run13", "run17",
+           "run15","run16","run18")
+
+pDistr <- data.table()
+
+
+getSampleRun <- function(out,runX,startX=5e4){
+  sampleX <- data.table(getSample(out,start=startX))
+  setnames(sampleX, out$setup$names)
+  sampleX[,run:=runX]
+  return(sampleX)
+}
+
+sample1 <- getSampleRun(out1,runLab[1])
+sample2 <- getSampleRun(out2,runLab[2])
+sample3 <- getSampleRun(out3,runLab[3])
+sample5 <- getSampleRun(out5,runLab[4])
+sample12 <- getSampleRun(out12,runLab[5])
+sample13 <- getSampleRun(out13,runLab[6])
+sample17 <- getSampleRun(out17,runLab[7])
+sample15 <- getSampleRun(out15,runLab[8])
+sample16 <- getSampleRun(out16,runLab[9])
+sample18 <- getSampleRun(out18,runLab[10])
+
+sampleSet1 <- rbind(sample1,sample2,sample3,sample5,sample12,sample13,sample17)
+sampleSet2 <- rbind(sample15,sample16,sample18)
+sampleAll <- merge(sampleSet1,sampleSet2,all=T)
+parNamAll <- out18$setup$names
+pMAP <- addPars$best[parSel]
+# pRidge <- list()
+for(i in 1:length(pMAP)){
+  # i=8
+  pRidge <- ggplot(sampleAll, 
+    aes(x = get(parNamAll[i]), y = run, fill = stat(x))) + 
+    xlab(NULL)+ ylab(NULL) + 
+    geom_vline(xintercept = pMAP[i],col="red") +
+    geom_density_ridges_gradient(scale = 3, size = 0.3, rel_min_height = 0.01) +
+    scale_fill_viridis_c(name = "", option = "C") +
+    labs(title = parNamAll[i]) 
+  # print(pRidge[[i]])
+  
+  ggsave(paste0("pDistr/",parNamAll[i],".png"))
+}
