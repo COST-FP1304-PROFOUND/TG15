@@ -661,6 +661,15 @@ sampleSet1 <- rbind(sample1,sample2,sample3,sample5,sample12,sample13,sample17)
 sampleSet2 <- rbind(sample15,sample16,sample18)
 sampleAll <- merge(sampleSet1,sampleSet2,all=T)
 parNamAll <- out18$setup$names
+
+
+levelX <- runLab
+  # c("errModbalDataPar", "errModunbalDataBiasmodLikePar", "errModunbalDataBiasPar", "errModunbalDatamodLikePar",
+  #           "errModunbalDataPar", "perModbalDataBiasOut", "perModbalDataPar", "perModunbalDataBiasmodLikePar",
+  #           "perModunbalDataBiasPar","perModunbalDataOut")
+
+sampleAll$run <- factor(sampleAll$run,levels = levelX)
+
 pMAP <- addPars$best[parSel]
 # pRidge <- list()
 for(i in 1:length(pMAP)){
@@ -668,11 +677,11 @@ for(i in 1:length(pMAP)){
   pRidge <- ggplot(sampleAll, 
     aes(x = get(parNamAll[i]), y = run, fill = stat(x))) + 
     xlab(NULL)+ ylab(NULL) + 
-    geom_vline(xintercept = pMAP[i],col="red") +
+    geom_vline(xintercept = pMAP[i],col="green") +
     geom_density_ridges_gradient(scale = 3, size = 0.3, rel_min_height = 0.01) +
-    scale_fill_viridis_c(name = "", option = "C") +
+    scale_fill_gradient2(midpoint = pMAP[i], low = "blue", high = "red") +
     labs(title = parNamAll[i]) 
-  # print(pRidge[[i]])
+  # print(pRidge)
   
   ggsave(paste0("pDistr/",parNamAll[i],".png"))
 }
