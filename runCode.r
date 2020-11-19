@@ -1,8 +1,8 @@
 setwd("C:/Users/minunno/Downloads/TG15-drcWorking/TG15-drcWorking/")
-runLab <- c("perModbalData","perModunbalData","errModbalData",
-            "errModunbalData","perModbalDataBias","perModunbalDataBias",
-            "errModunbalDataBias","errModunbalDatamodLike",
-            "perModunbalDataBiasmodLike","errModunbalDataBiasmodLike")
+runLab <- c("Pb","Pu","Eb",
+            "Eu","PbB","PuB",
+            "EuB","EuL",
+            "PuBL","EuBL")
 runID <- c("run1", "run2", "run3", "run5",
            "run12", "run13", "run17",
            "run15","run16","run18")
@@ -89,8 +89,8 @@ out1 <- fitVSEM("run1.RData")
 
 MAP  <- calcMAP("MAP.Rdata")
 
-plotParameters(out1,refPars)
-plotOutputs(out1,refPars)
+# plotParameters(out1,refPars)
+# plotOutputs(out1,refPars)
 
 pCor1 <- plotCor(out1,parSel,refPars,runLab[1])
 pCor1
@@ -124,8 +124,8 @@ out2 <- fitVSEM("run2.RData")
 
 MAPunbal <- calcMAP("MAPunbal.Rdata")
 
-plotParameters(out2,refPars)
-plotOutputs(out2,refPars)
+# plotParameters(out2,refPars)
+# plotOutputs(out2,refPars)
 
 pCor2 <- plotCor(out2,parSel,refPars,runLab[2])
 pCor2
@@ -160,8 +160,8 @@ out3 <- fitVSEM("run3.RData")
 
 MAPErr <- calcMAP("MAPErr.Rdata")
 
-plotParameters(out3,refPars)
-plotOutputs(out3,refPars)
+# plotParameters(out3,refPars)
+# plotOutputs(out3,refPars)
 pCor3 <- plotCor(out3,parSel,refPars,runLab[3])
 pCor3
 
@@ -194,8 +194,8 @@ out5 <- fitVSEM("run5.RData")
 
 MAPErrunbal <- calcMAP("MAPErrunbal.Rdata")
 
-plotParameters(out5,refPars)
-plotOutputs(out5,refPars)
+# plotParameters(out5,refPars)
+# plotOutputs(out5,refPars)
 
 pCor5 <- plotCor(out5,parSel,refPars,runLab[4])
 pCor5
@@ -227,8 +227,8 @@ prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPa
 
 out12 <- fitVSEM("run12.RData")
 
-plotParameters(out12,refPars)
-plotOutputs(out12,refPars)
+# plotParameters(out12,refPars)
+# plotOutputs(out12,refPars)
 obs <- obs.orig
 pCor12 <- plotCor(out12,parSel,refPars,runLab[5])
 pCor12
@@ -260,8 +260,8 @@ prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPa
 
 out13 <- fitVSEM("run13.RData")
 
-plotParameters(out13,refPars)
-plotOutputs(out13,refPars)
+# plotParameters(out13,refPars)
+# plotOutputs(out13,refPars)
 obs <- obs.orig
 pCor13 <- plotCor(out13,parSel,refPars,runLab[6])
 pCor13
@@ -296,8 +296,8 @@ prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPa
 
 out17 <- fitVSEM("run17.RData")
 
-plotParameters(out17,refPars)
-plotOutputs(out17,refPars)
+# plotParameters(out17,refPars)
+# plotOutputs(out17,refPars)
 obs <- obs.orig
 
 pCor17 <- plotCor(out17,parSel,refPars,runLab[7])
@@ -453,8 +453,8 @@ likelihood <- function(x, sum = TRUE){
 prior         <- createUniformPrior(lower = addPars$lower[parSel], upper = addPars$upper[parSel])
 out15 <- fitVSEM("run15.RData",iter=1200000, params=addPars)
 
-plotParametersEsys(out15,addPars)
-plotOutputsEsys(out15,addPars)
+# plotParametersEsys(out15,addPars)
+# plotOutputsEsys(out15,addPars)
 pCor15 <- plotCor(out15,parSel,addPars,runLab[8])
 pCor15
 
@@ -496,8 +496,8 @@ likelihood <- function(x, sum = TRUE){
 prior         <- createUniformPrior(lower = addPars$lower[parSel], upper = addPars$upper[parSel])
 
 out16 <- fitVSEM("run16.RData",params=addPars)
-plotParametersEsys(out16,addPars)
-plotOutputsEsys(out16,addPars)
+# plotParametersEsys(out16,addPars)
+# plotOutputsEsys(out16,addPars)
 obs <- obs.orig
 pCor16 <- plotCor(out16,parSel,addPars,runLab[9])
 pCor16
@@ -542,8 +542,8 @@ likelihood <- function(x, sum = TRUE){
 prior         <- createUniformPrior(lower = addPars$lower[parSel], upper = addPars$upper[parSel])
 
 out18 <- fitVSEM("run18.RData",iter=1200000,params=addPars)
-plotParametersEsys(out18,addPars)
-plotOutputsEsys(out18,addPars)
+# plotParametersEsys(out18,addPars)
+# plotOutputsEsys(out18,addPars)
 obs <- obs.orig
 
 pCor18 <- plotCor(out18,parSel,addPars,runLab[10])
@@ -596,7 +596,7 @@ pCorAllData$run <- factor(pCorAllData$run,levels = runLab)
 pCorAll <- ggplot(pCorAllData,aes(x=corCoef,y=refRun,col=runs))+
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +
-  xlim(-1,1) + ylim(-1,1) +xlab("correltions all runs") + ylab("cor perModbalData") 
+  xlim(-1,1) + ylim(-1,1) +xlab("cor. coeff. runs") + ylab("cor. coeff. Pb") 
 
 
 
@@ -666,9 +666,6 @@ parNamAll <- out18$setup$names
 
 
 levelX <- runLab
-  # c("errModbalDataPar", "errModunbalDataBiasmodLikePar", "errModunbalDataBiasPar", "errModunbalDatamodLikePar",
-  #           "errModunbalDataPar", "perModbalDataBiasOut", "perModbalDataPar", "perModunbalDataBiasmodLikePar",
-  #           "perModunbalDataBiasPar","perModunbalDataOut")
 
 sampleAll$run <- factor(sampleAll$run,levels = levelX)
 
