@@ -1,4 +1,11 @@
 setwd("C:/Users/minunno/Downloads/TG15-drcWorking/TG15-drcWorking/")
+runLab <- c("perModbalData","perModunbalData","errModbalData",
+            "errModunbalData","perModbalDataBias","perModunbalDataBias",
+            "errModunbalDataBias","errModunbalDatamodLike",
+            "perModunbalDataBiasmodLike","errModunbalDataBiasmodLike")
+runID <- c("run1", "run2", "run3", "run5",
+           "run12", "run13", "run17",
+           "run15","run16","run18")
 
 library(BayesianTools)
 library(tidyverse)
@@ -85,7 +92,7 @@ MAP  <- calcMAP("MAP.Rdata")
 plotParameters(out1,refPars)
 plotOutputs(out1,refPars)
 
-pCor1 <- plotCor(out1,parSel,refPars,"perModbalDataPar")
+pCor1 <- plotCor(out1,parSel,refPars,runLab[1])
 pCor1
 
 
@@ -120,7 +127,7 @@ MAPunbal <- calcMAP("MAPunbal.Rdata")
 plotParameters(out2,refPars)
 plotOutputs(out2,refPars)
 
-pCor2 <- plotCor(out2,parSel,refPars,"perModunbalDataOut")
+pCor2 <- plotCor(out2,parSel,refPars,runLab[2])
 pCor2
 
 ## Likelihood: Gaussian 2048 obs for each of NEE, Cv and Cs
@@ -155,7 +162,7 @@ MAPErr <- calcMAP("MAPErr.Rdata")
 
 plotParameters(out3,refPars)
 plotOutputs(out3,refPars)
-pCor3 <- plotCor(out3,parSel,refPars,"errModbalDataPar")
+pCor3 <- plotCor(out3,parSel,refPars,runLab[3])
 pCor3
 
 newPars <- refPars$best
@@ -190,7 +197,7 @@ MAPErrunbal <- calcMAP("MAPErrunbal.Rdata")
 plotParameters(out5,refPars)
 plotOutputs(out5,refPars)
 
-pCor5 <- plotCor(out5,parSel,refPars,"errModunbalDataPar")
+pCor5 <- plotCor(out5,parSel,refPars,runLab[4])
 pCor5
 
 obs.orig     <- obs
@@ -223,7 +230,7 @@ out12 <- fitVSEM("run12.RData")
 plotParameters(out12,refPars)
 plotOutputs(out12,refPars)
 obs <- obs.orig
-pCor12 <- plotCor(out12,parSel,refPars,"perModbalDataBiasOut")
+pCor12 <- plotCor(out12,parSel,refPars,runLab[5])
 pCor12
 
 
@@ -256,7 +263,7 @@ out13 <- fitVSEM("run13.RData")
 plotParameters(out13,refPars)
 plotOutputs(out13,refPars)
 obs <- obs.orig
-pCor13 <- plotCor(out13,parSel,refPars,"perModunbalDataBiasPar")
+pCor13 <- plotCor(out13,parSel,refPars,runLab[6])
 pCor13
 
 
@@ -293,7 +300,7 @@ plotParameters(out17,refPars)
 plotOutputs(out17,refPars)
 obs <- obs.orig
 
-pCor17 <- plotCor(out17,parSel,refPars,"errModunbalDataBiasPar")
+pCor17 <- plotCor(out17,parSel,refPars,runLab[7])
 pCor17
 
 
@@ -448,7 +455,7 @@ out15 <- fitVSEM("run15.RData",iter=1200000, params=addPars)
 
 plotParametersEsys(out15,addPars)
 plotOutputsEsys(out15,addPars)
-pCor15 <- plotCor(out15,parSel,addPars,"errModunbalDatamodLikePar")
+pCor15 <- plotCor(out15,parSel,addPars,runLab[8])
 pCor15
 
 
@@ -492,7 +499,7 @@ out16 <- fitVSEM("run16.RData",params=addPars)
 plotParametersEsys(out16,addPars)
 plotOutputsEsys(out16,addPars)
 obs <- obs.orig
-pCor16 <- plotCor(out16,parSel,addPars,"perModunbalDataBiasmodLikePar")
+pCor16 <- plotCor(out16,parSel,addPars,runLab[9])
 pCor16
 
 
@@ -539,10 +546,10 @@ plotParametersEsys(out18,addPars)
 plotOutputsEsys(out18,addPars)
 obs <- obs.orig
 
-pCor18 <- plotCor(out18,parSel,addPars,"errModunbalDataBiasmodLikePar")
+pCor18 <- plotCor(out18,parSel,addPars,runLab[10])
 pCor18
 
-
+setwd("C:/Users/minunno/GitHub/TG15")
 
 library(data.table)
 library(ggplot2)
@@ -560,34 +567,36 @@ lmCoef <- data.table(
           coef12$coefficients[1],coef13$coefficients[1],coef17$coefficients[1]),
   slope=c(coef2$coefficients[2],coef3$coefficients[2],coef5$coefficients[2],
           coef12$coefficients[2],coef13$coefficients[2],coef17$coefficients[2]),
-  runs = c("perModunbalDataOut","errModbalDataPar",
-           "errModunbalDataPar","perModbalDataBiasOut","perModunbalDataBiasPar",
-           "errModunbalDataBiasPar")        
+  runs = runLab[2:7]
 )
+
+
 
 corsData1 <- data.table(
   corCoef = c(pCor1$cors, pCor2$cors, pCor3$cors, pCor5$cors,
            pCor12$cors, pCor13$cors, pCor17$cors),
-  runs = rep(c("perModbalDataPar","perModunbalDataOut","errModbalDataPar",
-  "errModunbalDataPar","perModbalDataBiasOut","perModunbalDataBiasPar",
-  "errModunbalDataBiasPar"),each=length(pCor1$cors))
+  runs = rep(runLab[1:7],each=length(pCor1$cors))
 )
 corsData2 <- data.table(
   corCoef = c(pCor15$cors, pCor16$cors, pCor18$cors),
-  runs = rep(c("errModunbalDatamodLikePar",
-               "perModunbalDataBiasmodLikePar",
-               "errModunbalDataBiasmodLikePar"),
+  runs = rep(runLab[8:10],
              each=length(pCor15$cors))
 )
 
 
-pCorAllData <- cbind(corsData1[runs!="perModbalDataPar"],
-                     refRun=corsData1[runs=="perModbalDataPar"]$corCoef)
+pCorAllData <- cbind(corsData1[runs!=runLab[1]],
+                     refRun=corsData1[runs==runLab[1]]$corCoef)
+
+
+
+corsData1$run <- factor(corsData1$run,levels = runLab[1:7])
+corsData2$run <- factor(corsData2$run,levels = runLab[8:10])
+pCorAllData$run <- factor(pCorAllData$run,levels = runLab)
 
 pCorAll <- ggplot(pCorAllData,aes(x=corCoef,y=refRun,col=runs))+
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +
-  xlim(-1,1) + ylim(-1,1) +xlab("correltions all runs") + ylab("cor perModbalDataPar") 
+  xlim(-1,1) + ylim(-1,1) +xlab("correltions all runs") + ylab("cor perModbalData") 
 
 
 
@@ -596,7 +605,7 @@ pRidgeCor <- ggplot(corsData1,
   aes(x = corCoef, y = runs, fill = stat(x))
 ) +
   geom_density_ridges_gradient(scale = 3, size = 0.3, rel_min_height = 0.01) +
-  scale_fill_viridis_c(name = "", option = "C") +
+  scale_fill_viridis_c(name = "", option = "C",limits=c(-1,1)) +
   labs(title = 'Correlation Coefficient distributions') 
 
 
@@ -605,20 +614,20 @@ pRidgeCor
 
 pCorAll
 
-png("summaryCorr.png",width = 800,height = 400)
+png("pCor/summaryCorr.png",width = 800,height = 400)
 grid_arrange_shared_legend(pCorAll,pRidgeCor,
                            ncol = 2, nrow = 1)
 dev.off()
 
 
-png("CorrFig1.png",width = 1000,height = 1000)
+png("pCor/CorrFig1.png",width = 1000,height = 1000)
 grid_arrange_shared_legend(pCor1$pCor, pCor2$pCor, pCor3$pCor, pCor5$pCor,
                            pCor12$pCor, pCor13$pCor, pCor17$pCor,
                            ncol = 3, nrow = 3)
 dev.off()
 
 
-png("CorrFig2.png",width = 1500)
+png("pCor/CorrFig2.png",width = 1500)
 grid_arrange_shared_legend(pCor15$pCor, pCor16$pCor, pCor18$pCor, ncol = 3, nrow = 1)
 dev.off()
 
@@ -628,13 +637,6 @@ dev.off()
 
 
 ####parameter ditribution
-runLab <- c("perModbalDataPar","perModunbalDataOut","errModbalDataPar",
-  "errModunbalDataPar","perModbalDataBiasOut","perModunbalDataBiasPar",
-  "errModunbalDataBiasPar","errModunbalDatamodLikePar",
-  "perModunbalDataBiasmodLikePar","errModunbalDataBiasmodLikePar")
-runID <- c("run1", "run2", "run3", "run5",
-           "run12", "run13", "run17",
-           "run15","run16","run18")
 
 pDistr <- data.table()
 
@@ -679,9 +681,10 @@ for(i in 1:length(pMAP)){
     xlab(NULL)+ ylab(NULL) + 
     geom_vline(xintercept = pMAP[i],col="green") +
     geom_density_ridges_gradient(scale = 3, size = 0.3, rel_min_height = 0.01) +
-    scale_fill_gradient2(midpoint = pMAP[i], low = "blue", high = "red") +
+    scale_fill_gradient2(midpoint = pMAP[i], low = "blue", high = "red",limits=as.numeric(addPars[parSel,2:3][i,])) +
     labs(title = parNamAll[i]) 
-  # print(pRidge)
+  print(pRidge)
   
   ggsave(paste0("pDistr/",parNamAll[i],".png"))
 }
+
