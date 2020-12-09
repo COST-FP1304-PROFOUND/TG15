@@ -16,9 +16,8 @@
 	 
 ## Diagnostic tool introduced
 
- * Have created a methodology and graph which can be used in many
-   applications to diagnose and help judge the severity of the issue.
-
+ As the Box aphorism says "All models are wrong but some are useful". A key consideration then is to what extent errors in the model (and biases in the data) give rise to the issues in calibration with imbalanced data that we have identified here. Or to put it another way, can we identify a signature for the issue that can be diagnosed so that modellers will know whether and how sever the issue may be in their calibration? To help with this we have developed a methodology that can be used as a diagnostic tool. We perform the diagnosis by starting with equal numbers of observations in the calibration and incrementally increasing the imbalance by allowing in more of the plentiful observations. If after calibration, model RMS errors versus observations increase for the sparse observations whilst RMS errors decrease for the plentiful observations, as shown in Fig. (\ref{fig:errModunbalDataBiasmodLikeOut}), as the imbalance increases, then we know that our calibration has this issue. If we create the diagnostic graph then it is possible also to assess how sever the problem is and at what point the increasing imbalance in the data starts to have a significant impact on the calibration. To overcome the issue there are ad-hoc measures that can be taken but as we have identified here, the underlying issue that needs to be addressed to make progress is to take account of model structural and data bias errors in the calibration. 
+ 
 ## Representing model and data error in BC helps to alleviate the issue
 
  * In this very simple example we were able to demonstrate a

@@ -34,13 +34,16 @@ constant light extinction coefficient operating on Leaf Area Index (LAI).  A par
 determines the fraction of GPP that is autotrophic respiration, giving the Net Primary Productivity (NPP).
 
 \begin{align}
-NPP &= PAR \times LUE \times (1 - \exp^{(-KEXT \times C_v)})\\
+GPP &= PAR \times LUE \times (1 - \exp^{(-KEXT \times LAR \times C_v)})\\
+NPP &= (1 - GAMMA) * GPP
 \end{align}
 
  * PAR Photosynthetically active radiation (MJ $m^{-2}$ $day^{-1}$)
  * LUE Light use efficiency of NPP (Ra implicit)
  * KEXT Beer's law light extinction coeff
  * $C_v$ Vegetation carbon
+ * LAR is the leaf area ratio
+ * GAMMA is the ratio of autotrophic respiration to GPP
 
 ### Carbon pool state equations
 
@@ -56,14 +59,62 @@ in the soil is determined via a soil turnover rate.
 \frac{dC_s}{dt}  &= \frac{C_r}{\tau_r} + \frac{C_v}{\tau_v} &- \frac{C_s}{\tau_s}
 \end{align}
 
+### VSEM model parameters
+
+| parameter name                     | variable name |
+|:-----------------------------------|---------------|
+| Light extinction coeff             | KEXT          |
+| Leaf area ratio                    | LAR           |
+| Light use efficiency               | LUE           |
+| Ratio of autotrophic resp to GPP   | GAMMA         |
+| Vegetation turnover rate           | tauV          |
+| Soil decomposition rate            | tauS          |
+| Root turnover rate                 | tauR          |
+| Allocation frac to vegetation      | Av            |
+| Initial vegetation pool size       | Cv            |
+| Initial soil pool size             | Cs            |
+| Initial root pool size             | Cr            |
+
 ## Bayesian Calibration
- * refer to forthcoming TG13 paper
- * R package used BayesianTools
- * DREAMzs algorithm
+
+In Bayesian Calibration, our aim is to quantify the probability of the model parameters ($\theta$) being correct given the calibration data (P($\theta$ | D). Since this is not straightforward to calculate we make use of Bayes equation. 
+
+\begin{equation}
+P(\theta | D) \propto P(\theta) L(D | \theta)
+\end{equation}
+
+Where P($\theta$ | D), P($\theta$) and L(D|$\theta$) are known as the posterior, prior and likelihood respectively. Since it is not possible to calculate the likelihood for a numerical model such as VSEM analytically we sample from it and the prior using a Monte Carlo approach to sample from the posterior. As a way of making this sampling more efficient we use the DREAMzs algorithm in a Markov Chain Monte Carlo (MCMC) sampling  
+
+ * brief summary of DREAMzs algorithm
+
+The DREAMzs algorithm and MCMC functions that we use here are from the BayesianTools package. 
+
+### Prior
+
+Here we adopt a very simple uniform prior since our aim here is to identify the issue using a simple and therefore easy to interpret modelling approach. 
+
+We need to be able to set the values for two parameters, allocation to vegetation (Av) and initial root pool for the virtual experiments described below. Since the root pool is not part of the model with the error we also exclude tauR from the calibration 
+
+Of the remaining parameters LAR and GAMMA were removed from the calibration to avoid nonidentifiability issues. 
+
+The remaining parameters are listed below along with the uniform prior ranges used. 
+
+| parameter | min    |  max   |
+|:----------|--------|-------|
+| KEXT      | 0.2    | 1.0   |
+| LUE       | 0.0002 | 0.004 |
+| tauV      | 200    | 3000  |s
+| tauS      | 4000   | 50000 |
+| Cv        | 0.0    | 400   | 
+| Cs        | 0.0    | 1000  |
 
 ## Idealised experiments with virtual data from VSEM
 ```{r child = 'TG15-virtualData.Rmd'}
 ```
+
+### Likelihood 
+
+Given that we added Gaussian noise to the model output to produce the virtual data, a univariate Gaussian likelihood is the obvious choice. In section (\@ref(modLike)) we discuss modifications to this simple likelihood to represent model structural error and data systematic bias. 
 
 ### Perfect model
 
@@ -95,11 +146,16 @@ observations with biases since all observational data will to a greater or lesse
 biases. Here we simulate data biases by multiplying the soil data by two to represent a considerable
 multiplicative bias in the observations of soil carbon. 
 
-## Modified Likelihood to represent structural errors in the model and systematic biases in the data. 
+## Modified Likelihood to represent structural errors in the model and systematic biases in the data. {modLike}
 
-Present the inclusion of additive and multiplicative parameter bias parameters in the likelihood
-here or leave until results section?
+A general principle in modelling is to begin with the simplest approach and only move on to more complicated solutions if the simple approach fails. We adopt that approach here, by representing model structural error and data systematic bias in the likelihood function by very simple multiplicative and additive constants to the model outputs. Whilst we could include these terms for all of the parts of the system where we have calibration data available we opted here to only include terms on the parts of the system where we had plentiful data (NEE and soil carbon). Therefore we have four extra parameters to represent addition and multiplicative error for each of NEE and soil carbon (modaddNEE, modmultNEE, modaddCs and modmultCs). The priors for each of these are as follows. 
 
+| parameter name |  min  | max  |
+|:---------------|-------|------|
+| modmultNEE     |  0.1  | 2.0  |
+| modmultCs      |  0.1  | 2.0  |
+| modaddNEE      | -0.01 | 0.01 |
+| modaddCs       | -1.0  | 1.0  |
 
 ```{r include=FALSE}
 ## Load older versions of BayesianTools R routines needed in TG15
