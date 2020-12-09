@@ -38,7 +38,12 @@ out1 <- fitVSEM("run1.RData")
 MAP  <- calcMAP("MAP.Rdata")
 ```
 
-```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModbalDataPar}Perfect model, balanced data (NEE, Cv, Cs: 2048 obs). Marginal posterior distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
+
+```{r echo=FALSE, out.width="45%", out.height="45%",fig.show='hold',fig.align='center', fig.cap="blank for now"}
+knitr::include_graphics(c("/home/david/TG15FM/pDistr/KEXT.png","/home/david/TG15FM/pDistr/LUE.png","/home/david/TG15FM/pDistr/tauV.png","/home/david/TG15FM/pDistr/tauS.png","/home/david/TG15FM/pDistr/Cs.png","/home/david/TG15FM/pDistr/Cv.png"))
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModbalDataPar}Perfect model, balanced data (NEE, Cv, Cs: 2048 obs). Marginal posteriors distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
 plotParameters(out1,refPars)
 ```
 
