@@ -1,14 +1,10 @@
 # Identifying the issue
 
-## Perfect model and balanced data
+In this section we investigate the underlying issue that causes there to be an problem when we try to calibrate a model with a data set that has very unbalanced numbers of observations from different parts of the system. We do this by breaking the problem into parts to investigate the individual influence of model structural error and data bias when calibrating with balanced and unbalanced datasets. We start with the idealised situation of a perfect and a perfect calibration dataset with a balanced number of observations for each part of the system. 
 
- * refer to Fig. (\ref{fig:perModbalDataPar}) and (\ref{fig:perModbalDataOut}) 
- * 'true' parameters largely found in posterior 
- * posterior parameter controlling data error close to 0.1 coefficient of variance
-   originally imposed to create observations from 'true' model output.
- * 50% quantile red line very close to green 'truth' line
- * posterior very narrow marked by 2.5% and 97.5% quantiles
- * most data within predictive interval
+## Perfect model and balanced data Pb
+
+Looking first at the parameters (Fig. (\ref{fig:perModbalDataPar}) we find that the 'true' parameters are largely recaptured by the calibration. The marginal posterior distributions are centred around the 'truth' line and the uncertainty versus the prior has reduced significantly. The model outputs for NEE, Cv and Cs are also centred around the truth line with the 50% quantile line matching the truth line closely. The posterior uncertainty is small and the predictive interval matches the uncertainty in the data as would be expected. This first calibration can be considered as a control against which all subsequent runs can be compared.
 
 ```{r include=FALSE}
 newPars <- refPars$best
@@ -39,26 +35,18 @@ MAP  <- calcMAP("MAP.Rdata")
 ```
 
 
-```{r echo=FALSE, out.width="45%", out.height="45%",fig.show='hold',fig.align='center', fig.cap="blank for now"}
+```{r echo=FALSE, out.width="45%", out.height="45%",fig.show='hold',fig.align='center', fig.cap="\\label{fig:Par}blank for now"}
 knitr::include_graphics(c("/home/david/TG15FM/pDistr/KEXT.png","/home/david/TG15FM/pDistr/LUE.png","/home/david/TG15FM/pDistr/tauV.png","/home/david/TG15FM/pDistr/tauS.png","/home/david/TG15FM/pDistr/Cs.png","/home/david/TG15FM/pDistr/Cv.png"))
-```
-
-```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModbalDataPar}Perfect model, balanced data (NEE, Cv, Cs: 2048 obs). Marginal posteriors distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
-plotParameters(out1,refPars)
 ```
 
 ```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModbalDataOut}Perfect model, balanced data (NEE, Cv, Cs: 2048 obs). Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
 plotOutputs(out1,refPars)
 ```
 
-## Perfect model and unbalanced data
+## Perfect model and unbalanced data Pu
 
- * refer to Fig. (\ref{fig:perModunbalDataPar}) and (\ref{fig:perModunbalDataOut}) 
- * despite unbalanced data 
-     * parameter values still close to true values in posterior 
-     * model output still close to truth even for vegetative carbon
-     * although now greater uncertainty for Cv then for balanced calibration
-	 
+We now consider what happens when we have a large imbalance in the calibration data. We do this by thinning out the number of observations for Cv from 2048 to just six observations whilst retaining the original 2048 observations for NEE and Cs; thus creating an O(3) imbalance. After calibration the parameters are still largely centred on the 'truth' line. For KEXT and especially tauV and Cv there has been an increase in marginal uncertainty but this would be expected since we have included less information in the calibration. In figure ... we see the outputs for Cv and Cs for Pu. For the remaining calibrations we do not include plots of NEE as the plot does not change from that shown previously for Pb. For Cs also, there is little change from before (Pb) when the data was balanced. The Cv plot shows the six observations that were retained in the calibration. The posterior is still centred on the truth line with a larger posterior uncertainty as might be expected since far fewer data have been included. These results show that creating an imbalanced does not cause an issue in the calibration other than increasing the uncertainty. 
+
 ```{r include=FALSE}
 newPars <- refPars$best
 parSel = c(defParms, nvar)
@@ -87,28 +75,10 @@ out2 <- fitVSEM("run2.RData")
 
 MAPunbal <- calcMAP("MAPunbal.Rdata")
 ```
-```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModunbalDataPar}Perfect model, unbalanced data (NEE, Cs: 2048 obs, Cv:  6 obs). Marginal posterior distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
-plotParameters(out2,refPars)
-```
 
-```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModunbalDataOut}Perfect model, unbalanced data (NEE, Cs: 2048 obs, Cv:  6 obs). Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
-plotOutputs(out2,refPars)
-```
+## Model with error and balanced data Eb
 
-## Model with error and balanced data
-
- * refer to Fig. (\ref{fig:errModbalDataPar}) and (\ref{fig:errModbalDataOut}) 
- * Root pool is effectively removed from the model by initialising pool to zero and
-   setting allocation to roots to zero. The loss of the root pool has introduced a
-   significant structural error to the model.
- * Parameter posteriors now quite far away from 'true' values. 
-     * Especially parameter which controls turnover of vegetation so that rate of turnover
-       to soil is now more than doubled.
- * Parameters calibration seems to have somewhat 'absorbed' the model structural error so that 
-     * outputs where there was data included in the BC are still not too far away from the
-       'truth' line.
-     * Cv now has too much variability but average increase not too bad.
-     * most data still within predictive interval.
+Here we create a known significant structural error in the model by effectively removing the root pool from the model see section... After calibration a number of parameters are now quite far away from their 'true' values. This is especially dramatic for tauV, which controls the turnover of vegetation, and is now lower, so that the rate of turnover of the vegetation pool has now more than doubled. All the allocated carbon is now to the vegetation pool so the increased turnover rate tries to compensate for this error in the model. Hence, we can see that the departure of the parameters from their 'true' value has the effect of 'absorbing' some of the influence of model structural error. The result is that the model outputs have not changed significantly (see supplementary material) from the perfect model run. These results show that model performance against available data can still be acceptable even when very signifcant model errors are present so long as changed parameters settings somewhat 'mask out' the influence of the error. 
 
 ```{r include=FALSE}
 
@@ -143,27 +113,9 @@ out3 <- fitVSEM("run3.RData")
 MAPErr <- calcMAP("MAPErr.Rdata")
 ```
 
-```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:errModbalDataPar}Model with error, balanced data. Marginal posterior distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
-plotParameters(out3,refPars)
-```
+## Model with error and unbalanced data Eu
 
-```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:errModbalDataOut}Model with error, balanced data. Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
-plotOutputs(out3,refPars)
-```
-
-## Model with error and unbalanced data
-
- * refer to Fig. (\ref{fig:errModunbalDataPar}) and (\ref{fig:errModunbalDataOut}) 
- * KEXT smaller, LUE larger, Cv larger, tauS smaller, tauV much larger, Cs much larger
-     * Generally parameters closer to their 'true' value. Less 'absorbing' of the model
-       structural error.
- * NEE and soil carbon pools look largely unchanged to balanced run and close to data and
-   predictive interval.
- * significant change to soil vegetation pool
-     * data outside of posterior and close to one edge of predictive interval
-     * departure from 'truth' line growing in time
- * General sense is that six vegetation data points are being somewhat ignored by the
-   calibration in favour of the more plentiful NEE and soil carbon data.
+We now test what happens when we combine the influences investigated in the previous two sections. This calibration includes both the model structural error and the large data imbalance. Looking first at the marginal parameter distributions after calibration there are changes versus the Eb calibration which are significant but not huge. In production, KEXT has increased and LUE has decreased slightly compensating for each other. Belowground, parameters Cs and tauS are now closer to their 'true' value than in Eb. Similarly aboveground, tauV is now closer to its 'true' value then in the Eb calibration. In general, the change in parameters to compensate for the model structural error is less than for Eb. Looking at outputs for Cv and Cs, the calibration is fine for Cs but drifts away significantly from the six vegetation measurements. This is the typical 'picture' for calibrations with a large data imbalance, the sparsely measured parts of the system are ignored at the expense of the parts of the system with many observations. This calibration, along with the previous two (Pu and Eb), make it clear that the model structural error is key in creating an issue when calibrating a model with a large imbalance in data. 
 
 ```{r include=FALSE}
 newPars <- refPars$best
@@ -196,28 +148,9 @@ out5 <- fitVSEM("run5.RData")
 MAPErrunbal <- calcMAP("MAPErrunbal.Rdata")
 ```
 
-```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:errModunbalDataPar}Model with error, unbalanced data (NEE, Cs: 2048 obs, Cv:  6 obs). Marginal posterior distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
-plotParameters(out5,refPars)
-```
+## Perfect model and balanced data with a multiplicative bias PbB
 
-```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:errModunbalDataOut}Model with error, unbalanced data (NEE, Cs: 2048 obs, Cv:  6 obs). Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
-plotOutputs(out5,refPars)
-```
-
-## Perfect model and balanced data with a multiplicative bias
-
- * refer to Fig. (\ref{fig:perModbalDataBiasPar}) and (\ref{fig:perModbalDataBiasOut}) 
- * soil carbon pool data multiplied by two to represent data that has a systematic bias
- * Parameters KEXT larger, tauV smaller, tauS much smaller, Cs much larger
- * as for model error parameter calibration 'absorb' the error
-     * initial value of soil pool parameter more than double 'true' value
-     * parameter controlling turnover time of soil approximately doubled to keep soil carbon pool high.
- * calibrated outputs again reasonably close to observations for NEE and Cv
-     * slope of soil carbon pool with time too shallow (so some data outside predictive
-       interval) but compares well with 'true' line (influence of other more accurate NEE
-       and vegetative carbon data?)
- * data and calibrated output of soil carbon greater than 'true' line by a factor of two
-   as might be expected to match calibration data.
+We now investigate the influence of data bias on the calibration. As presented in section..., we create a multiplicative data bias by multiplying the soil carbon pool by two. Similarly to Eb, parameters in the calibration do not all recover their 'true' values and hence 'absorb' the influence of data error. As might be expected this is most dramatic for the belowground parameters. The Cs parameter increases significantly and the tauS also increases, slowing the turnover. This has the effect of increasing the soil carbon pool to match the erroneous data. As before, these departures of the parameters from their 'true' value allows there to be a reasonably close match between the model outputs after calibration and the data (supplementary material). 
 
 ```{r include=FALSE}
 obs.orig     <- obs
@@ -246,25 +179,14 @@ likelihood <- function(x, sum = TRUE){
 prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
 
 out12 <- fitVSEM("run12.RData")
-```
-
-```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModbalDataBiasPar}Perfect model and balanced data with a multiplicative bias. Marginal posterior distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
-plotParameters(out12,refPars)
-```
-
-```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModbalDataBiasOut}Perfect model and balanced data with a multiplicative bias. Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
-plotOutputs(out12,refPars)
 obs <- obs.orig
 ```
 
-## Perfect model and unbalanced data with a multiplicative bias
+## Perfect model and unbalanced data with a multiplicative bias PuB
 
- * refer to Fig. (\ref{fig:perModunbalDataBiasPar}) and (\ref{fig:perModunbalDataBiasOut}) 
- * most parameters are far away from their 'true' values
- * soil carbon improved fit to data versus previous balanced data calibration
- * six vegetative carbon data points effectively ignored and overpowered by NEE and soil
-   carbon data in the calibration.
- 
+We now add the effect of unbalanced data to the calibration with the large data bias. We look first at the parameter marginal distributions after calibration. In carbon production, KEXT has increased markedly increasing the carbon inputted to the system. This is counteracted slightly by LUE. Aboveground Cv is much larger tauV is smaller increasing the turnover to the soil. This has the combined effect of passing on more carbon to the soil. Belowground, tauS was already large, Cs has decreased versus the PbB calibration. As the output plots, show the calibration is now effectively completely ignoring the six vegetation observations with all the 'effort' going into matching the many erroneous soil carbon observations. This is in effect just a more dramatic example of what we observed in Eu. These results show there can be issues calibrating with unbalanced datasets where there is a model structural error or a significant data bias.
+
+
 ```{r include=FALSE}
 obs[,3] <- obs[,3] * 2.0
 
@@ -291,24 +213,13 @@ likelihood <- function(x, sum = TRUE){
 prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
 
 out13 <- fitVSEM("run13.RData")
-```
-
-```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModunbalDataBiasPar}Perfect model and unbalanced data with a multiplicative bias. Marginal posterior distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
-plotParameters(out13,refPars)
-```
-
-```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModunbalDataBiasOut}Perfect model and unbalanced data with a multiplicative bias. Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
-plotOutputs(out13,refPars)
 obs <- obs.orig
 ```
 
-## Model with error and unbalanced data with a multiplicative bias
+## Model with error and unbalanced data with a multiplicative bias EuB
 
- * refer to Fig. (\ref{fig:errModunbalDataBiasPar}) and (\ref{fig:errModunbalDataBiasOut}) 
- * similar to calibration with bias in data above.
- * vegetative carbon perhaps very slightly closer to the data than when only data bias was
-   present. This may indicate compensating errors in the model and data.
- 
+Now we combine the model structural error with the data bias and run the calibration with the unbalanced dataset. The two errors slightly counteract each other since the erroneous increase in the vegetation pool due to the missing root pool model error is beneficial in feeding more carbon to the soil pool through increased vegetative turnover to match the errorneous data. Therefore Cv can be closer to its true value versus PuB whereas tauV is further away from its 'true' value facilitating greater turnover. The model outputs are very similar to PuB with the data error dominating. 
+
 ```{r include=FALSE}
 obs[,3] <- obs[,3] * 2.0
 
@@ -338,17 +249,9 @@ likelihood <- function(x, sum = TRUE){
 prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
 
 out17 <- fitVSEM("run17.RData")
-```
-
-```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:errModunbalDataBiasPar}Model with error and unbalanced data with a multiplicative bias. Marginal posterior distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
-plotParameters(out17,refPars)
-```
-
-```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:errModunbalDataBiasOut}Model with error and unbalanced data with a multiplicative bias. Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
-
-plotOutputs(out17,refPars)
 obs <- obs.orig
 ```
+
 
 # Diagnosing the issue
 
@@ -522,7 +425,7 @@ grid_arrange_shared_legend(p1, p2, p3, ncol = 1, nrow = 3)
 
 # Changes to the Likelihood to represent model and data errors
 
-## Model with error and unbalanced perfect data with additive and multiplicative parameters to represent model error. 
+## Model with error and unbalanced perfect data with additive and multiplicative parameters to represent model error. EuL
  * refer to Fig. (\ref{fig:errModunbalDatamodLikePar}) and (\ref{fig:errModunbalDatamodLikeOut})
  * KEXT, LUE, Cv, Cs and error-coeffVar are now significantly closer to the 'true' values. tauS is not but is much more uncertain. 
  * vegetative carbon much improved 
@@ -576,7 +479,7 @@ plotParametersEsys(out15,addPars)
 plotOutputsEsys(out15,addPars)
 ```
 
-## Perfect model and and unbalanced data with a multiplicative bias and additive and multiplicative parameters to represent the bias.
+## Perfect model and and unbalanced data with a multiplicative bias and additive and multiplicative parameters to represent the bias. PuBL
   * refer to Fig. (\ref{fig:perModunbalDataBiasmodLikePar}) and (\ref{fig:perModunbalDataBiasmodLikeOut}) 
   * many model parameters (KEXT, LUE, tauV, tauS, initial Cv) much closer to 'true' values
   * multiplicative bias multiplication parameter modmultCs centred around 2.25 which is close to the multiplication factor applied to the data. 
@@ -631,7 +534,7 @@ plotOutputsEsys(out16,addPars)
 obs <- obs.orig
 ```
 
-## Model with error and and unbalanced data with a multiplicative bias and additive and multiplicative parameters to represent model error and the data bias.
+## Model with error and and unbalanced data with a multiplicative bias and additive and multiplicative parameters to represent model error and the data bias. EuBL
 
 ```{r include=FALSE}
 obs[,3] <- obs[,3] * 2.0

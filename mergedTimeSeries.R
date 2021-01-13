@@ -4,6 +4,8 @@ library(BayesianTools)
 source("TG15-BayesianToolsOld.R")
 source("helperFunctions.R")
 
+setwd("RDataWorkingMSILong")
+
 load("obs.RData")
 
 refPars = VSEMgetDefaults()
@@ -13,8 +15,10 @@ par(bg = "white")
 
 ## generate intervals
 intervals = list()
-experiments = c(1,2,3,5,12,13,17,15,16,18)
-expName = c("Pb","Pu","Eb",NA,"Eu",NA,NA,NA,NA,NA,NA,"PbB","PuB",NA,"EuL","PuBL","EuB","EuBL")
+#experiments = c(1,2,3,5,12,13,17,15,16,18)
+#expName = c("Pb","Pu","Eb",NA,"Eu",NA,NA,NA,NA,NA,NA,"PbB","PuB",NA,"EuL","PuBL","EuB","EuBL")
+experiments = c(2,5,13,15,18)
+expName = c(NA,"Pu",NA,NA,"Eu",NA,NA,NA,NA,NA,NA,NA,"PuB",NA,"EuL",NA,NA,"EuBL")
 for(fl in experiments){
   print(fl)
   
@@ -80,8 +84,8 @@ for(fl in experiments){
 } ## end fl
     
 #pdf("timeseries.pdf")
-pdf("timeseriesSel.pdf",height=14)
-par(mfrow = c(4,2))
+pdf("../timeseriesSel.pdf",height=14)
+par(mfrow = c(5,2))
 titles =c("NEE","Cv","Cs")
 obsUnbal <- c(1,202,390,550,750,920)*2.0
 obsBal <- seq_along(PAR)
