@@ -4,7 +4,7 @@ library(BayesianTools)
 source("TG15-BayesianToolsOld.R")
 source("helperFunctions.R")
 
-setwd("RDataWorkingMSILongOld")
+setwd("RDataWorkingMSILongNew")
 
 load("obs.RData")
 
@@ -26,7 +26,7 @@ experiments = c(2,5,13,15,18)
 expName = c(NA,"Pu",NA,NA,"Eu",NA,NA,NA,NA,NA,NA,NA,"PuB",NA,"EuL",NA,NA,"EuBL")
 for(fl in experiments){
   print(fl)
-  
+  if(fl > 12) rownames(refPars)[nvar] <- "error-sd"    
   fname = paste0("run",fl,".RData")
   if(file.exists(fname)) {
     load(fname)
@@ -41,7 +41,7 @@ for(fl in experiments){
   for(plotfld in 2:3){
     error = errorFunction
     if (grepl("L",expName)[fl]) {
-     model <- function(x) runModelEsys(x,plotfld)
+     model <- function(x) runModelEsys2(x,plotfld)
     }else {    
      model <- function(x) runModel(x,plotfld)
     }
@@ -52,25 +52,29 @@ for(fl in experiments){
       if (class(out) == "matrix"){ parMatrix = out
       }else {stop("wrong type give to variable sampler")}
     }
-    
     ## get intervals
     start = 1
     thin = 5000 ## number of samples RETAINED
     quantiles = c(0.025, 0.975)
 
     if(grepl("L",expName)[fl]){
-      addPars                   <- refPars
-      addPars[nvar+1,]          <- c(1.0, 0.1, 3.0)
-      addPars[nvar+2,]          <- c(1.0, 0.1, 3.0)
-      addPars[nvar+3,]          <- c(0.0, -0.01, 0.01)
-      addPars[nvar+4,]          <- c(0.0, -1.0, 1.0)
-      rownames(addPars)[nvar+1]   <- "modmultNEE-sd"
-      rownames(addPars)[nvar+2]   <- "modmultCs-sd" 
-      rownames(addPars)[nvar+3]   <- "modaddNEE-sd"
-      rownames(addPars)[nvar+4]   <- "modaddCs-sd"
-      newPars <- addPars$best
-      names(newPars) = row.names(addPars)
-      #nvar = nrow(addPars) + 1
+        addPars                   <- refPars
+        addPars[nvar+1,]          <- c(1.0, 0.1, 2.0)
+        addPars[nvar+2,]          <- c(1.0, 0.1, 2.0)
+        addPars[nvar+3,]          <- c(1.0, 0.1, 2.0)
+        addPars[nvar+4,]          <- c(0.0, -0.01, 0.01)
+        addPars[nvar+5,]          <- c(0.0, -1.0, 1.0)
+        addPars[nvar+6,]          <- c(0.0, -1.0, 1.0)
+        rownames(addPars)[nvar]     <- "error-coeffVar"
+        rownames(addPars)[nvar+1]   <- "modmultNEE"
+        rownames(addPars)[nvar+2]   <- "modmultCs"
+        rownames(addPars)[nvar+3]   <- "modmultCv"
+        rownames(addPars)[nvar+4]   <- "modaddNEE"
+        rownames(addPars)[nvar+5]   <- "modaddCs"
+        rownames(addPars)[nvar+6]   <- "modaddCv"
+        newPars <- addPars$best
+        names(newPars) = row.names(addPars)
+     #nvar = nrow(addPars) + 1
     } else{ 
       newPars <- refPars$best
       names(newPars) = row.names(refPars)
@@ -110,7 +114,8 @@ for(fl in experiments){
 } ## end fl
     
 #pdf("timeseries.pdf")
-pdf("../timeseriesSelOld.pdf",height=14)
+pdf("../timeseriesSelNew.pdf",height=14)
+png("../timeseriesSelNew.png",height=1024)
 par(mfrow = c(5,2))
 titles =c("NEE","Cv","Cs")
 obsUnbal <- c(1,202,390,550,750,920)*2.0
@@ -120,7 +125,7 @@ for(fl in experiments){
     myObs = obs[,plotfld]
     if(grepl("u",expName)[fl] && plotfld==2) obsSel = obsUnbal else obsSel = obsBal
     myObs[-obsSel] <- NA
-    if(grepl("B",expName)[fl] && plotfld==3) myObs = myObs*2
+    if(grepl("B",expName)[fl] && plotfld==3) myObs = myObs*0.8
     reference=referenceData[,plotfld]
     plotTimeSeriesOld(reference = reference, observed=myObs,confidenceBand = intervals[[fl]][[plotfld]][1:2,], predictionBand = intervals[[fl]][[plotfld]][3:4,],main=titles[plotfld])
     lines(referenceData[,plotfld],col=3,lwd=1)
