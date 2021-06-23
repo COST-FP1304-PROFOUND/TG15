@@ -18,6 +18,17 @@ runModel <- function(par,pool){
   return(predicted[,pool])
 }
 
+runModelEsys2 <- function(par,pool){
+  x = createMixWithDefaultsOld(par, newPars, parSel)
+  predicted <- VSEM(x[1:(nvar-1)], PAR)
+  if (pool == 1) predicted[,1] = predicted[,1]*x[nvar+1]  + x[nvar+4]
+  if (pool == 2) predicted[,2] = (predicted[1,2] + (predicted[,2] - predicted[1,2])*x[nvar+3]) + x[nvar+6]
+  
+  if (pool == 3) predicted[,3] = (predicted[1,3] + (predicted[,3] - predicted[1,3])*x[nvar+2]) + x[nvar+5]
+  return(predicted[,pool])
+}
+
+
 runModelEsys <- function(par,pool){
   x = createMixWithDefaultsOld(par, newPars, parSel)
   predicted <- VSEM(x[1:(nvar-1)], PAR)
@@ -25,6 +36,8 @@ runModelEsys <- function(par,pool){
   if (pool == 3) predicted[,3] = (predicted[1,3] + (predicted[,3] - predicted[1,3])*x[nvar+2]) + x[nvar+4]
   return(predicted[,pool])
 }
+
+
 
 errorFunction <- function(mean, par) rnorm(length(mean), mean = mean, sd = abs(mean)*par[length(defParms)+1])
 
@@ -89,6 +102,34 @@ plotOutputs <- function(out,refPars){
 
 }
 
+firstFig <- function(out,refPars){
+    nmc = nrow(out$chain[[1]])
+
+    par(mfrow = c(2,2))
+    par(bg = "white")
+     ttitles <- c("NEE","vegetative carbon (Cv)","soil carbon (Cs)")
+
+    for(plotfld in 2:3){
+        myModel <- function(x) runModel(x,plotfld)
+        myObs = obs[,plotfld]
+        if(exists("obsSel") & plotfld %in% isLow) myObs[-obsSel] <- NA
+        plotTimeSeriesResultsOld(out, model = myModel, reference=referenceData[,plotfld], observed = myObs, error = errorFunction,start=nmc/2,plotResiduals = FALSE)
+        lines(referenceData[,plotfld],col=3,lwd=1)
+        if(plotfld==3) text(550,0.95*max(myObs),labels ="Pb (Eb, PbB)", cex=1.5)
+        title(main = ttitles[plotfld])
+    }
+
+   myObs = obs[,1]
+        if(exists("obsSel") & 1 %in% isLow) myObs[-obsSel] <- NA
+
+    myModel <- function(x) runModel(x,1)
+    plotTimeSeriesResultsOld(out, model = myModel, reference=referenceData[,1],observed = myObs, error = errorFunctionNEE,start=nmc/2, plotResiduals = FALSE)
+        lines(referenceData[,1],col=3,lwd=1)
+    title(main = ttitles[1])
+
+}
+
+
 plotOutputsEsys <- function(out,refPars){
     nmc = nrow(out$chain[[1]])
 
@@ -106,6 +147,31 @@ plotOutputsEsys <- function(out,refPars){
 
     for(plotfld in 2:3){
         myModel <- function(x) runModelEsys(x,plotfld)
+        myObs = obs[,plotfld]
+        if(exists("obsSel") & plotfld %in% isLow) myObs[-obsSel] <- NA
+        plotTimeSeriesResultsOld(out, model = myModel, reference=referenceData[,plotfld], observed = myObs, error = errorFunction,start=nmc/2,plotResiduals = FALSE)
+        lines(referenceData[,plotfld],col=3,lwd=1)
+        title(main = ttitles[plotfld])
+    }
+}
+
+plotOutputsEsys2 <- function(out,refPars){
+    nmc = nrow(out$chain[[1]])
+
+    par(mfrow = c(2,2))
+    par(bg = "white")
+    myObs = obs[,1]
+    if(exists("obsSel") & 1 %in% isLow) myObs[-obsSel] <- NA
+
+    ttitles <- c("NEE","vegetative carbon (Cv)","soil carbon (Cs)")
+
+    myModel <- function(x) runModelEsys2(x,1)
+    plotTimeSeriesResultsOld(out, model = myModel,reference=referenceData[,1],  observed = myObs, error = errorFunctionNEE,start=nmc/2,plotResiduals = FALSE)
+    lines(referenceData[,1],col=3,lwd=1)
+    title(main = ttitles[1])
+
+    for(plotfld in 2:3){
+        myModel <- function(x) runModelEsys2(x,plotfld)
         myObs = obs[,plotfld]
         if(exists("obsSel") & plotfld %in% isLow) myObs[-obsSel] <- NA
         plotTimeSeriesResultsOld(out, model = myModel, reference=referenceData[,plotfld], observed = myObs, error = errorFunction,start=nmc/2,plotResiduals = FALSE)

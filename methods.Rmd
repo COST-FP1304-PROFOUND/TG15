@@ -133,18 +133,11 @@ observations for days 2, 404, 780, 1100, 1500 and 1840.
 
 To simulate a model with a known structural error we consider a situation where a major model
 process/structure is unknown and therefore missing in the model. Here we remove the root pool
-completely from the VSEM to simulate a major structural error. This is done by initialising the root
-pool to zero and setting the root allocation fraction to zero so that all the NPP is now allocated
-to the vegetation pool. This also of course shuts off any senescence from the root pool to the
-soil. This gives the model a major structural error as we might have in a real situation whilst
-being sufficiently simple that we can still interpret the influence of the error.
+completely from the VSEM to simulate a major structural error. This is done by initialising the root pool to zero and setting the root allocation fraction to zero so that all the NPP is now allocated to the vegetation pool. This also of course shuts off any senescence from the root pool to the soil. This gives the model a major structural error as we might have in a real situation whilst being sufficiently simple that we can still interpret the influence of the error.
 
 ### Observational data with known bias
 
-In addition to considering model structural error, we also wish to investigate the influence of
-observations with biases since all observational data will to a greater or lesser extent contain
-biases. Here we simulate data biases by multiplying the soil data by two to represent a considerable
-multiplicative bias in the observations of soil carbon. 
+In addition to considering model structural error, we also wish to investigate the influence of observations with biases since all observational data will to a greater or lesser extent contain biases. Here we simulate data biases by multiplying the soil data by two to represent a considerable multiplicative bias in the observations of soil carbon. 
 
 ## Modified Likelihood to represent structural errors in the model and systematic biases in the data. {modLike}
 

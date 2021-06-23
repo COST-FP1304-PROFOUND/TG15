@@ -36,11 +36,15 @@ MAP  <- calcMAP("MAP.Rdata")
 
 
 ```{r echo=FALSE, out.width="45%", out.height="45%",fig.show='hold',fig.align='center', fig.cap="\\label{fig:Par}blank for now"}
-knitr::include_graphics(c("/home/david/TG15FM/pDistr/KEXT.png","/home/david/TG15FM/pDistr/LUE.png","/home/david/TG15FM/pDistr/tauV.png","/home/david/TG15FM/pDistr/tauS.png","/home/david/TG15FM/pDistr/Cs.png","/home/david/TG15FM/pDistr/Cv.png"))
+knitr::include_graphics(c("/home/david/TG15/pDistrNew/KEXT.png","/home/david/TG15/pDistrNew/LUE.png","/home/david/TG15/pDistrNew/tauV.png","/home/david/TG15/pDistrNew/tauS.png","/home/david/TG15/pDistrNew/Cv.png","/home/david/TG15/pDistrNew/Cs.png"))
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModbalDataPar}Perfect model, balanced data (NEE, Cv, Cs: 2048 obs). Marginal posteriors distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
+plotParameters(out1,refPars)
 ```
 
 ```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModbalDataOut}Perfect model, balanced data (NEE, Cv, Cs: 2048 obs). Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
-plotOutputs(out1,refPars)
+firstFig(out1,refPars)
 ```
 
 ## Perfect model and unbalanced data Pu
@@ -75,6 +79,14 @@ out2 <- fitVSEM("run2.RData")
 
 MAPunbal <- calcMAP("MAPunbal.Rdata")
 ```
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModunbalDataPar}Perfect model, unbalanced data (NEE, Cs: 2048 obs, Cv:  6 obs). Marginal posterior distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
+plotParameters(out2,refPars)
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModunbalDataOut}Perfect model, unbalanced data (NEE, Cs: 2048 obs, Cv:  6 obs). Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
+plotOutputs(out2,refPars)
+```
+
 
 ## Model with error and balanced data Eb
 
@@ -113,6 +125,15 @@ out3 <- fitVSEM("run3.RData")
 MAPErr <- calcMAP("MAPErr.Rdata")
 ```
 
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:errModbalDataPar}Model with error, balanced data. Marginal posterior distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
+plotParameters(out3,refPars)
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:errModbalDataOut}Model with error, balanced data. Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
+plotOutputs(out3,refPars)
+```
+
+
 ## Model with error and unbalanced data Eu
 
 We now test what happens when we combine the influences investigated in the previous two sections. This calibration includes both the model structural error and the large data imbalance. Looking first at the marginal parameter distributions after calibration there are changes versus the Eb calibration which are significant but not huge. In production, KEXT has increased and LUE has decreased slightly compensating for each other. Belowground, parameters Cs and tauS are now closer to their 'true' value than in Eb. Similarly aboveground, tauV is now closer to its 'true' value then in the Eb calibration. In general, the change in parameters to compensate for the model structural error is less than for Eb. Looking at outputs for Cv and Cs, the calibration is fine for Cs but drifts away significantly from the six vegetation measurements. This is the typical 'picture' for calibrations with a large data imbalance, the sparsely measured parts of the system are ignored at the expense of the parts of the system with many observations. This calibration, along with the previous two (Pu and Eb), make it clear that the model structural error is key in creating an issue when calibrating a model with a large imbalance in data. 
@@ -148,13 +169,23 @@ out5 <- fitVSEM("run5.RData")
 MAPErrunbal <- calcMAP("MAPErrunbal.Rdata")
 ```
 
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:errModunbalDataPar}Model with error, unbalanced data (NEE, Cs: 2048 obs, Cv:  6 obs). Marginal posterior distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
+plotParameters(out5,refPars)
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:errModunbalDataOut}Model with error, unbalanced data (NEE, Cs: 2048 obs, Cv:  6 obs). Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
+plotOutputs(out5,refPars)
+```
+
+
 ## Perfect model and balanced data with a multiplicative bias PbB
 
 We now investigate the influence of data bias on the calibration. As presented in section..., we create a multiplicative data bias by multiplying the soil carbon pool by two. Similarly to Eb, parameters in the calibration do not all recover their 'true' values and hence 'absorb' the influence of data error. As might be expected this is most dramatic for the belowground parameters. The Cs parameter increases significantly and the tauS also increases, slowing the turnover. This has the effect of increasing the soil carbon pool to match the erroneous data. As before, these departures of the parameters from their 'true' value allows there to be a reasonably close match between the model outputs after calibration and the data (supplementary material). 
 
 ```{r include=FALSE}
+
 obs.orig     <- obs
-obs[,3] <- obs[,3] * 2.0
+obs[,3] <- obs[,3] * 0.8
 
 newPars <- refPars$best
 names(newPars) = row.names(refPars)
@@ -179,8 +210,28 @@ likelihood <- function(x, sum = TRUE){
 prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
 
 out12 <- fitVSEM("run12.RData")
+
+#obs <- obs.orig
+
+#pdf('par12.pdf')
+#plot(out12)
+#dev.off()
+
+#pdf('out12.pdf')
+#plotOutputs(out12,refPars)
+#dev.off()
+
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModbalDataBiasPar}Perfect model and balanced data with a multiplicative bias. Marginal posterior distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
+plotParameters(out12,refPars)
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModbalDataBiasOut}Perfect model and balanced data with a multiplicative bias. Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
+plotOutputs(out12,refPars)
 obs <- obs.orig
 ```
+
 
 ## Perfect model and unbalanced data with a multiplicative bias PuB
 
@@ -188,7 +239,7 @@ We now add the effect of unbalanced data to the calibration with the large data 
 
 
 ```{r include=FALSE}
-obs[,3] <- obs[,3] * 2.0
+obs[,3] <- obs[,3] * 0.8
 
 newPars <- refPars$best
 parSel = c(defParms, nvar)
@@ -213,6 +264,25 @@ likelihood <- function(x, sum = TRUE){
 prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
 
 out13 <- fitVSEM("run13.RData")
+
+#obs <- obs.orig
+
+#pdf('par13.pdf')
+#plot(out13)
+#dev.off()
+
+#pdf('out13.pdf')
+#plotOutputs(out13,refPars)
+#dev.off()
+
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModunbalDataBiasPar}Perfect model and unbalanced data with a multiplicative bias. Marginal posterior distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
+plotParameters(out13,refPars)
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModunbalDataBiasOut}Perfect model and unbalanced data with a multiplicative bias. Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
+plotOutputs(out13,refPars)
 obs <- obs.orig
 ```
 
@@ -221,7 +291,8 @@ obs <- obs.orig
 Now we combine the model structural error with the data bias and run the calibration with the unbalanced dataset. The two errors slightly counteract each other since the erroneous increase in the vegetation pool due to the missing root pool model error is beneficial in feeding more carbon to the soil pool through increased vegetative turnover to match the errorneous data. Therefore Cv can be closer to its true value versus PuB whereas tauV is further away from its 'true' value facilitating greater turnover. The model outputs are very similar to PuB with the data error dominating. 
 
 ```{r include=FALSE}
-obs[,3] <- obs[,3] * 2.0
+#obs[,3] <- obs[,3] * 2.0
+obs[,3] <- obs[,3] * 0.8
 
 newPars <- refPars$best
 names(newPars) = row.names(refPars)
@@ -249,8 +320,29 @@ likelihood <- function(x, sum = TRUE){
 prior         <- createUniformPrior(lower = refPars$lower[parSel], upper = refPars$upper[parSel])
 
 out17 <- fitVSEM("run17.RData")
+
+#obs <- obs.orig
+
+#pdf('par17.pdf')
+#plot(out17)
+#dev.off()
+
+#pdf('out17.pdf')
+#plotOutputs(out17,refPars)
+#dev.off()
+
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:errModunbalDataBiasPar}Model with error and unbalanced data with a multiplicative bias. Marginal posterior distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
+plotParameters(out17,refPars)
+```
+
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:errModunbalDataBiasOut}Model with error and unbalanced data with a multiplicative bias. Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
+
+plotOutputs(out17,refPars)
 obs <- obs.orig
 ```
+
 
 
 # Diagnosing the issue
@@ -425,29 +517,34 @@ grid_arrange_shared_legend(p1, p2, p3, ncol = 1, nrow = 3)
 
 # Changes to the Likelihood to represent model and data errors
 
+The results from section... show that the underlying issue with including unbalanced data in the calibration is not unbalance itself but that there are significant model structural errors or data systematic biases or both effecting the calibration. Therefore, here we aim to introduce terms in the likelihood which represent our uncertainty about what these errors could be. This uncertainty exists and hence it needs to be represented. Otherwise, as we saw in section..., the posterior uncertainty will be too small and parameters will find their greatest posterior probability far from their 'true' values, to try and compensate for the unrepresented errors in the calibration. 
+	
+As presented in section... we represent these model and data errors as simply as possible using additive and multiplicative terms on the parts of the system (NEE and Cs) that have lots of data. This introduces four new parameters to the calibration. 
+
 ## Model with error and unbalanced perfect data with additive and multiplicative parameters to represent model error. EuL
- * refer to Fig. (\ref{fig:errModunbalDatamodLikePar}) and (\ref{fig:errModunbalDatamodLikeOut})
- * KEXT, LUE, Cv, Cs and error-coeffVar are now significantly closer to the 'true' values. tauS is not but is much more uncertain. 
- * vegetative carbon much improved 
-     * 5 out of 6 data points are now inside the posterior confidence interval
-     * 50% quantile line now much closer to the 'true' line.
+
+Our first test using the new Likelihood is with the calibration with a significant model error and unbalanced data. To see the influence of the new terms we compare marginal posterior parameter distribution with those for Eu. An important effect of introducing these new terms is that uncertainty is in general increased. For some parameters (LUE, Cs and error-coeff) the posterior distribution is closer to the 'true' value. Others (tauV and tauS) are centred further away from their 'true' value but with larger uncertainty. Looking at the output timeseries the influence of the error hasn't gone away, as already noted for posterior parameter distributions, but there has been a significant improvement with the centre of the posterior now much closter to the 'truth' line. In addition, the uncertainty has increased so that 5 of the 6 data points are now inside the posterior confidence interval. The very simple multiplicative and additive terms introduced have not removed the influence of the error suggesting that more complex terms may be beneficial. There is however, a much greater sense that the sparse data are influencing the calibration. 
 
  
 ```{r include=FALSE}
 addPars                   <- refPars
 addPars[nvar+1,]          <- c(1.0, 0.1, 2.0)
 addPars[nvar+2,]          <- c(1.0, 0.1, 2.0)
-addPars[nvar+3,]          <- c(0.0, -0.01, 0.01)
-addPars[nvar+4,]          <- c(0.0, -1.0, 1.0)
+addPars[nvar+3,]          <- c(1.0, 0.1, 2.0)
+addPars[nvar+4,]          <- c(0.0, -0.01, 0.01)
+addPars[nvar+5,]          <- c(0.0, -1.0, 1.0)
+addPars[nvar+6,]          <- c(0.0, -1.0, 1.0)
 rownames(addPars)[nvar+1]   <- "modmultNEE"
 rownames(addPars)[nvar+2]   <- "modmultCs"
-rownames(addPars)[nvar+3]   <- "modaddNEE"
-rownames(addPars)[nvar+4]   <- "modaddCs"
+rownames(addPars)[nvar+3]   <- "modmultCv"
+rownames(addPars)[nvar+4]   <- "modaddNEE"
+rownames(addPars)[nvar+5]   <- "modaddCs"
+rownames(addPars)[nvar+6]   <- "modaddCv"
 newPars <- addPars$best
 names(newPars) = row.names(addPars)
 newPars["Av"]  <- 1.0
 newPars["Cr"]  <- 0.0
-parSel = c(defParms, nvar,nvar+1,nvar+2,nvar+3,nvar+4)
+parSel = c(defParms, nvar,nvar+1,nvar+2,nvar+3,nvar+4,nvar+5,nvar+6)
 npar <- length(parSel)
 obsSel <- c(1,202,390,550,750,920)*2
 isLow = 2
@@ -455,11 +552,11 @@ likelihood <- function(x, sum = TRUE){
   x         <- createMixWithDefaults(x, newPars, parSel)
   predicted <- VSEM(x[1:(nvar-1)], PAR)
 
-  diff       <- c((predicted[,1]*x[nvar+1] + x[nvar+3]) - obs[,1])
+  diff       <- c((predicted[,1]*x[nvar+1] + x[nvar+4]) - obs[,1])
   llValues1  <- dnorm(diff, sd = pmax((abs(c(predicted[,1])) + 0.0000001) * x[nvar],0.0005), log = T)
-  diff       <- c(predicted[obsSel,2] - obs[obsSel,2])
+  diff       <- c(((predicted[1,2] + (predicted[obsSel,2] - predicted[1,2])*x[nvar+3]) + x[nvar+6]) - obs[obsSel,2])
   llValues2  <- dnorm(diff, sd = (abs(c(predicted[obsSel,2])) + 0.0000001) * x[nvar], log = T)
-  diff       <- c(((predicted[1,3] + (predicted[,3] - predicted[1,3])*x[nvar+2]) + x[nvar+4]) - obs[,3])
+  diff       <- c(((predicted[1,3] + (predicted[,3] - predicted[1,3])*x[nvar+2]) + x[nvar+5]) - obs[,3])
   llValues3  <- dnorm(diff, sd = (abs(c(predicted[,3])) + 0.0000001) * x[nvar], log = T)
 
   ## if (sum == FALSE) return(llValues)
@@ -468,7 +565,17 @@ likelihood <- function(x, sum = TRUE){
 }
 
 prior         <- createUniformPrior(lower = addPars$lower[parSel], upper = addPars$upper[parSel])
+
 out15 <- fitVSEM("run15.RData",iter=1200000, params=addPars)
+
+#pdf('par15.pdf')
+#plot(out15)
+#dev.off()
+
+#pdf('out15.pdf')
+#plotOutputsEsys2(out15,addPars)
+#dev.off()
+
 ```
 
 ```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:errModunbalDatamodLikePar}Model with error and unbalanced data with additive and multiplicative parameters to represent model error. Marginal posterior distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
@@ -476,43 +583,44 @@ plotParametersEsys(out15,addPars)
 ```
 
 ```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:errModunbalDatamodLikeOut}Model with error and unbalanced data with additive and multiplicative parameters to represent model error. Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
-plotOutputsEsys(out15,addPars)
+plotOutputsEsys2(out15,addPars)
 ```
 
 ## Perfect model and and unbalanced data with a multiplicative bias and additive and multiplicative parameters to represent the bias. PuBL
-  * refer to Fig. (\ref{fig:perModunbalDataBiasmodLikePar}) and (\ref{fig:perModunbalDataBiasmodLikeOut}) 
-  * many model parameters (KEXT, LUE, tauV, tauS, initial Cv) much closer to 'true' values
-  * multiplicative bias multiplication parameter modmultCs centred around 2.25 which is close to the multiplication factor applied to the data. 
-  * NEE and soil carbon close to the data and within the predictive interval.
-  * vegetative carbon pool much improved with all data points covered by the posterior credible interval.
- 
+
+This calibration introduces the Likelikehood error terms to the previous calibration (PuB) with a large data bias and unbalanced data. Looking at changes in the posterior parameter distributions versus PuB, as noted previously for EuL, a key influence is that uncertainty is increased. Some parameters (KEXT, tauV, Cv) are significantly closer to their true values. As for EuL the vegetative carbon timeseries is also much improved (supplementary material). This shows that the extra terms are having a similar beneficial influence on this calibration as was found in EuL. 
+
 ```{r include=FALSE}
-obs[,3] <- obs[,3] * 2.0
+obs[,3] <- obs[,3] * 0.8
 
 addPars                   <- refPars
-addPars[nvar+1,]          <- c(1.0, 0.1, 3.0)
-addPars[nvar+2,]          <- c(1.0, 0.1, 3.0)
-addPars[nvar+3,]          <- c(0.0, -0.01, 0.01)
-addPars[nvar+4,]          <- c(0.0, -1.0, 1.0)
+addPars[nvar+1,]          <- c(1.0, 0.1, 2.0)
+addPars[nvar+2,]          <- c(1.0, 0.1, 2.0)
+addPars[nvar+3,]          <- c(1.0, 0.1, 2.0)
+addPars[nvar+4,]          <- c(0.0, -0.01, 0.01)
+addPars[nvar+5,]          <- c(0.0, -1.0, 1.0)
+addPars[nvar+6,]          <- c(0.0, -1.0, 1.0)
 rownames(addPars)[nvar+1]   <- "modmultNEE"
 rownames(addPars)[nvar+2]   <- "modmultCs"
-rownames(addPars)[nvar+3]   <- "modaddNEE"
-rownames(addPars)[nvar+4]   <- "modaddCs"
+rownames(addPars)[nvar+3]   <- "modmultCv"
+rownames(addPars)[nvar+4]   <- "modaddNEE"
+rownames(addPars)[nvar+5]   <- "modaddCs"
+rownames(addPars)[nvar+6]   <- "modaddCv"
 newPars <- addPars$best
 names(newPars) = row.names(addPars)
-parSel = c(defParms, nvar,nvar+1,nvar+2,nvar+3,nvar+4)
+parSel = c(defParms, nvar,nvar+1,nvar+2,nvar+3,nvar+4,nvar+5,nvar+6)
 npar <- length(parSel)
 obsSel <- c(1,202,390,550,750,920)*2
 isLow = 2
 likelihood <- function(x, sum = TRUE){
-  x         <- createMixWithDefaultsOld(x, newPars, parSel)
+  x         <- createMixWithDefaults(x, newPars, parSel)
   predicted <- VSEM(x[1:(nvar-1)], PAR)
 
-  diff       <- c((predicted[,1]*x[nvar+1] + x[nvar+3]) - obs[,1])
+  diff       <- c((predicted[,1]*x[nvar+1] + x[nvar+4]) - obs[,1])
   llValues1  <- dnorm(diff, sd = pmax((abs(c(predicted[,1])) + 0.0000001) * x[nvar],0.0005), log = T)
-  diff       <- c(predicted[obsSel,2] - obs[obsSel,2])
+  diff       <- c(((predicted[1,2] + (predicted[obsSel,2] - predicted[1,2])*x[nvar+3]) + x[nvar+6]) - obs[obsSel,2])
   llValues2  <- dnorm(diff, sd = (abs(c(predicted[obsSel,2])) + 0.0000001) * x[nvar], log = T)
-  diff       <- c(((predicted[1,3] + (predicted[,3] - predicted[1,3])*x[nvar+2]) + x[nvar+4]) - obs[,3])
+  diff       <- c(((predicted[1,3] + (predicted[,3] - predicted[1,3])*x[nvar+2]) + x[nvar+5]) - obs[,3])
   llValues3  <- dnorm(diff, sd = (abs(c(predicted[,3])) + 0.0000001) * x[nvar], log = T)
 
   ## if (sum == FALSE) return(llValues)
@@ -522,7 +630,18 @@ likelihood <- function(x, sum = TRUE){
 
 prior         <- createUniformPrior(lower = addPars$lower[parSel], upper = addPars$upper[parSel])
 
-out16 <- fitVSEM("run16.RData",params=addPars)
+out16 <- fitVSEM("run16.RData",iter=1200000,params=addPars)
+
+#pdf('par16.pdf')
+#plot(out16)
+#dev.off()
+
+#pdf('out16.pdf')
+#plotOutputsEsys2(out16,addPars)
+#dev.off()
+
+#obs <- obs.orig
+
 ```
 
 ```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModunbalDataBiasmodLikePar}Perfect model and and unbalanced data with a multiplicative bias and additive and multiplicative parameters to represent the bias. Marginal posterior distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
@@ -530,41 +649,48 @@ plotParametersEsys(out16,addPars)
 ```
 
 ```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModunbalDataBiasmodLikeOut}Perfect model and and unbalanced data with a multiplicative bias and additive and multiplicative parameters to represent the bias. Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
-plotOutputsEsys(out16,addPars)
+plotOutputsEsys2(out16,addPars)
 obs <- obs.orig
 ```
 
 ## Model with error and and unbalanced data with a multiplicative bias and additive and multiplicative parameters to represent model error and the data bias. EuBL
 
+In this final calibration we combine the influence of the model error, the data bias and the unbalanced now with the new terms in the likelihood representing additive and multiplicative error. We compare against the posterior parameter distributions for the calibration EuB. Similarly to the previous calibrations (EuL and PuBL) the uncertainty has increased significantly for a number of parameters (LUE, tauS, tauV and Cs). A number of parameter distributions are now closer to parameter's 'true' value (KEXT, tauV and Cv). As might be expected the resultant posterior parameter distribution are somewhat a combination of what we see for EuL and PuBL. For the Cv pool there is a large improvement in the fit to data with five of the six data points now within the posterior prediction.  
+
+
 ```{r include=FALSE}
-obs[,3] <- obs[,3] * 2.0
-   
+obs[,3] <- obs[,3] * 0.8
+
 addPars                   <- refPars
-addPars[nvar+1,]          <- c(1.0, 0.1, 3.0)
-addPars[nvar+2,]          <- c(1.0, 0.1, 3.0)
-addPars[nvar+3,]          <- c(0.0, -0.01, 0.01)
-addPars[nvar+4,]          <- c(0.0, -1.0, 1.0)
+addPars[nvar+1,]          <- c(1.0, 0.1, 2.0)
+addPars[nvar+2,]          <- c(1.0, 0.1, 2.0)
+addPars[nvar+3,]          <- c(1.0, 0.1, 2.0)
+addPars[nvar+4,]          <- c(0.0, -0.01, 0.01)
+addPars[nvar+5,]          <- c(0.0, -1.0, 1.0)
+addPars[nvar+6,]          <- c(0.0, -1.0, 1.0)
 rownames(addPars)[nvar+1]   <- "modmultNEE"
 rownames(addPars)[nvar+2]   <- "modmultCs"
-rownames(addPars)[nvar+3]   <- "modaddNEE"
-rownames(addPars)[nvar+4]   <- "modaddCs"
+rownames(addPars)[nvar+3]   <- "modmultCv"
+rownames(addPars)[nvar+4]   <- "modaddNEE"
+rownames(addPars)[nvar+5]   <- "modaddCs"
+rownames(addPars)[nvar+6]   <- "modaddCv"
 newPars <- addPars$best
 names(newPars) = row.names(addPars)
 newPars["Av"]  <- 1.0
 newPars["Cr"]  <- 0.0
-parSel = c(defParms, nvar,nvar+1,nvar+2,nvar+3,nvar+4)
+parSel = c(defParms, nvar,nvar+1,nvar+2,nvar+3,nvar+4,nvar+5,nvar+6)
 npar <- length(parSel)
 obsSel <- c(1,202,390,550,750,920)*2
 isLow = 2
 likelihood <- function(x, sum = TRUE){
-  x         <- createMixWithDefaultsOld(x, newPars, parSel)
+  x         <- createMixWithDefaults(x, newPars, parSel)
   predicted <- VSEM(x[1:(nvar-1)], PAR)
 
-  diff       <- c((predicted[,1]*x[nvar+1] + x[nvar+3]) - obs[,1])
+  diff       <- c((predicted[,1]*x[nvar+1] + x[nvar+4]) - obs[,1])
   llValues1  <- dnorm(diff, sd = pmax((abs(c(predicted[,1])) + 0.0000001) * x[nvar],0.0005), log = T)
-  diff       <- c(predicted[obsSel,2] - obs[obsSel,2])
+  diff       <- c(((predicted[1,2] + (predicted[obsSel,2] - predicted[1,2])*x[nvar+3]) + x[nvar+6]) - obs[obsSel,2])
   llValues2  <- dnorm(diff, sd = (abs(c(predicted[obsSel,2])) + 0.0000001) * x[nvar], log = T)
-  diff       <- c(((predicted[1,3] + (predicted[,3] - predicted[1,3])*x[nvar+2]) + x[nvar+4]) - obs[,3])
+  diff       <- c(((predicted[1,3] + (predicted[,3] - predicted[1,3])*x[nvar+2]) + x[nvar+5]) - obs[,3])
   llValues3  <- dnorm(diff, sd = (abs(c(predicted[,3])) + 0.0000001) * x[nvar], log = T)
 
   ## if (sum == FALSE) return(llValues)
@@ -574,7 +700,15 @@ likelihood <- function(x, sum = TRUE){
 
 prior         <- createUniformPrior(lower = addPars$lower[parSel], upper = addPars$upper[parSel])
 
-out18 <- fitVSEM("run18.RData",iter=1200000,params=addPars)
+out18 <- fitVSEM("run18.RData",iter=1200000, params=addPars)
+
+#pdf('par18.pdf')
+#plot(out18)
+#dev.off()
+
+#pdf('out18.pdf')
+#plotOutputsEsys2(out18,addPars)
+#dev.off()
 ```
 
 ```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:errModunbalDataBiasmodLikePar}Model with error and and unbalanced data with a multiplicative bias and additive and multiplicative parameters to represent model error and the data bias. Marginal posterior distribution of model parameters and intital states. The red line marks the 'true' parameter values."}
@@ -582,14 +716,8 @@ plotParametersEsys(out18,addPars)
 ```
 
 ```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:errModunbalDataBiasmodLikeOut}Model with error and and unbalanced data with a multiplicative bias and additive and multiplicative parameters to represent model error and the data bias. Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
-plotOutputsEsys(out18,addPars)
+plotOutputsEsys2(out18,addPars)
 obs <- obs.orig
 ```
 
- * refer to Fig. (\ref{fig:errModunbalDataBiasmodLikePar}) and (\ref{fig:errModunbalDataBiasmodLikeOut}) 
- * as above many parameters improved (KEXT, LUE, tauS, initial Cv)
- * modmultCs value centered ~1.8 compromise between value in Fig. (\ref{fig:perModunbalDataBiasmodLikePar}) for bias only and Fig. (\ref{fig:errModunbalDatamodLikePar}) model error only. 
- * vegetative pool much improved with 
-     * 5 out of 6 data points within posterior credible interval
-     * 50% quantile line now much closer to the 'true' line.
-     * similar to Fig. (\ref{fig:errModunbalDatamodLikeOut}) 
+

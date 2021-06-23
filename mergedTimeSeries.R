@@ -4,14 +4,19 @@ library(BayesianTools)
 source("TG15-BayesianToolsOld.R")
 source("helperFunctions.R")
 
-setwd("RDataWorkingMSILong")
+setwd("RDataWorkingMSILongOld")
 
 load("obs.RData")
 
 refPars = VSEMgetDefaults()
+refPars               <- VSEMgetDefaults()
+nvar                  <-  nrow(refPars)+1
+## add SD
+refPars[nvar,]          <- c(0.1, 0.001, 0.5)
+rownames(refPars)[nvar] <- "error-sd"
 PAR = BayesianTools::VSEMcreatePAR(days = seq_len(nrow(obs)))
-par(bg = "white")
-
+#par(bg = "white")
+defParms = c(1,3,5,6,9,10) 
 
 ## generate intervals
 intervals = list()
@@ -35,8 +40,11 @@ for(fl in experiments){
   
   for(plotfld in 2:3){
     error = errorFunction
-    model <- function(x) runModel(x,plotfld)
-    
+    if (grepl("L",expName)[fl]) {
+     model <- function(x) runModelEsys(x,plotfld)
+    }else {    
+     model <- function(x) runModel(x,plotfld)
+    }
     ## get parameter samples
     if(inherits(out,"bayesianOutput")){ 
       parMatrix = getSample(out, start = nmc/2)
@@ -49,11 +57,28 @@ for(fl in experiments){
     start = 1
     thin = 5000 ## number of samples RETAINED
     quantiles = c(0.025, 0.975)
-    newPars <- refPars$best
-    names(newPars) = row.names(refPars)
-    defParms = parSel = which(names(newPars) %in% colnames(parMatrix))
-    errSel = grep("error",colnames(parMatrix))
-    nvar = nrow(refPars) + 1
+
+    if(grepl("L",expName)[fl]){
+      addPars                   <- refPars
+      addPars[nvar+1,]          <- c(1.0, 0.1, 3.0)
+      addPars[nvar+2,]          <- c(1.0, 0.1, 3.0)
+      addPars[nvar+3,]          <- c(0.0, -0.01, 0.01)
+      addPars[nvar+4,]          <- c(0.0, -1.0, 1.0)
+      rownames(addPars)[nvar+1]   <- "modmultNEE-sd"
+      rownames(addPars)[nvar+2]   <- "modmultCs-sd" 
+      rownames(addPars)[nvar+3]   <- "modaddNEE-sd"
+      rownames(addPars)[nvar+4]   <- "modaddCs-sd"
+      newPars <- addPars$best
+      names(newPars) = row.names(addPars)
+      #nvar = nrow(addPars) + 1
+    } else{ 
+      newPars <- refPars$best
+      names(newPars) = row.names(refPars)
+      
+     #nvar = nrow(refPars) + 1
+    }
+   #errSel = grep("error",colnames(parMatrix))
+    parSel = which(names(newPars) %in% colnames(parMatrix))
     if(grepl("E",expName)[fl]){
       newPars["Av"] = 1
       newPars["Cr"] = 0
@@ -61,7 +86,8 @@ for(fl in experiments){
     
     #pred <- getPredictiveIntervalsOld(parMatrix = parMatrix, model = model, thin = 1000, quantiles = c(0.025, 0.5, 0.975), error = error)
     
-    pred = getPredictiveDistributionOld(parMatrix[,-errSel], model = model, thin = thin)
+   # pred = getPredictiveDistributionOld(parMatrix[,-errSel], model = model, thin = thin)
+    pred = getPredictiveDistributionOld(parMatrix, model = model, thin = thin)
       ## some predictions are NaN, not sure why
     CI =  apply(pred,2,quantile,quantiles,na.rm=TRUE)
       #getCredibleIntervalsOld(sampleMatrix = pred, quantiles = quantiles)
@@ -84,7 +110,7 @@ for(fl in experiments){
 } ## end fl
     
 #pdf("timeseries.pdf")
-pdf("../timeseriesSel.pdf",height=14)
+pdf("../timeseriesSelOld.pdf",height=14)
 par(mfrow = c(5,2))
 titles =c("NEE","Cv","Cs")
 obsUnbal <- c(1,202,390,550,750,920)*2.0
@@ -98,7 +124,15 @@ for(fl in experiments){
     reference=referenceData[,plotfld]
     plotTimeSeriesOld(reference = reference, observed=myObs,confidenceBand = intervals[[fl]][[plotfld]][1:2,], predictionBand = intervals[[fl]][[plotfld]][3:4,],main=titles[plotfld])
     lines(referenceData[,plotfld],col=3,lwd=1)
-    if(plotfld == 3) text(200,0.95*max(myObs),labels = as.character(expName[fl]),cex=2)
+    if(expName[fl]=="PuB"){
+        if(plotfld == 3) text(450,0.95*max(myObs),labels = paste0(as.character(expName[fl]),
+                                                                  " (EuB)"),cex=2)
+    } else if (expName[fl]=="EuBL"){
+        if(plotfld == 3) text(550,0.95*max(myObs),labels = paste0(as.character(expName[fl]),
+                                                                  " (PuBL)"),cex=2)
+    } else {    
+        if(plotfld == 3) text(200,0.95*max(myObs),labels = as.character(expName[fl]),cex=2)
+    }
   }
 }
 dev.off()

@@ -1,5 +1,65 @@
 # Discussion
 
+## Identifying the issue with unbalanced data
+
+ * Calibration with perfect model and unbalanced data has demonstrated that there is no intrinsic issue with unbalanced data. 
+ * Model error is introduced with balanced data. We do not normally know the true parameter settings so would be regarded as a successful calibration.
+ * The goal of the calibration is to diminish model-data difference. 
+ * The likelihood cannot distinguish between model-data difference due to parameter or model structural error. Calibration has no means of changing the structure of the model so model-data difference can only be diminished by the parameters departing from their true values.
+ * In this way model structural error is 'absorbed' by the parameters. 
+ * There is quite a lot of data present in calibration so result is confidently wrong. 
+ * It is when the model has an error and unbalanced data that we start to see an issue in the model predictions versus data.
+ * Now the model predictions are also confidently wrong. 
+ * Parameters are if anything better after calibration than for balanced data because fewer data points need to be fitted with the erroneous model. 
+ * From its 'own perspective' the calibration is 'doing the right thing' as there is lots of evidence in the likelihood that the model is off from soil and NEE but only a little evidence that model is far away from vegetation data.
+ * These idealised calibrations have demonstrated that the issue is that the model has an error causing a model-data difference and the only means of reducing the difference is for the parameters to depart from their true value.
+ * The issue is the presence of the model error not the imbalance in calibration data. 
+ * From the perspective of the calibration systematic data bias is just another model-data mismatch that can be reduced by changed parameter values. 
+ * Hence there is a lot of similarity between the influence of model error and data systematic bias in the calibration. The likelihood cannot distinguish model-data difference due to model error, wrong parameter values or data systematic bias.
+
+## Diagnostic tool
+
+ * Calibrations can go wrong for a number of different reasons.
+ * It would be useful to have a tool that could help identify whether this issue is present. 
+ * Problem is that we don't have access to the true model, parameters or predictions that we had above. 
+ * Signature of the issue is that, starting with a balanced calibration and adding more observations thus increasing the imbalance, the predictions of the plentifully observed outputs improve whilst the poorly observed outputs get worse. 
+ * The figure is the diagnostic tool.
+ * The tool can also help identify how large the imbalance needs to be before there is an issue. 
+ * This will be different for each situation and will depend on the specific model errors and data systematic biases present. 
+ 
+## The issue with reweighing the data to restore balance
+ 
+ * From a pragmatic standpoint a simple solution could be to reweigh the data to restore balance. 
+ * This would be done either by applying weights or by leaving out observations. 
+ * As illustrated if the data are balanced then model and data errors may not detrimentally affect the predictions after calibration.
+ * Is it such an issue that parameters are pushed away from their 'true' values? Especially considering there may be no physical analogue for a parameter that can be observed. 
+ * There are two key objections to this.
+   1) We know that the issue in the calibration is with model error or data systematic bias but we are trying so solve the problem by rebalancing data. Better instead to address the root cause of the issue. 
+   2) The purpose of the calibration is to update our subjective prior knowledge with more objective evidence taken from observations. By reweighing the data we reintroduce our subjective control over the calibration by some measure of how close we want the model to fit the observations after calibration.
+ * While pragmatic, reweighing the observation does not seem to be the right approach unless there are no other possible solutions.
+ 
+## Introduce terms in the calibration to represent model error and data systematic bias
+
+ * An obvious solution would be to correct the model error and data bias. 
+ * The issue is of course that we do not know what the errors are and even if we do it may not be straightforward to correct them.
+ * In any case we will never eradicate all the model errors only reduce them.
+ * In the mean time we still want to use our imperfect models for prediction and calibrate them against observations to quantify and reduce uncertainty in those predictions. 
+ * In calibration we know that we need to represent all the uncertainty in the problem if we are to have a good measure of uncertainty in our predictions. 
+ * Hence we need to represent out uncertainty in model error and data systematic bias in the calibration. 
+ * We also if at all possible we want to try and demarcate model-data differences due to model error and parameter values so that the posterior uncertainty gives us the best measure of uncertainty in future predictions. 
+ * Representing model error in calibration is not straightforward and is a large subject in its own right and is not the focus of this paper.
+ * As a good general approach here we represent model error and data bias as very simply. 
+ * Our representations are probably too simple as model parameters after calibration are still far away from their true values. 
+ * However we have improved model predictions with unbalanced data without resorting to subjective ad-hoc data reweighing and the much larger posterior uncertainty after calibration better reflects uncertainty due to model error and datat systematic bias.
+ * Further improvements could of course be made but this effort would probably be better placed in improving the calibration of a 'real' model against actual observations. 
+
+
+In recent times the advent of automatic collection techniques have dramatically increased the quantity of observations available for some parts of the ecological system. In tandem, computational advances have made it more practical to apply sampling based Bayesian methodologies, improving our ability to fuse together the strengths of process-based modelling and data. Whereas before only a few observations were available for Bayesian calibration, now orders of magnitude more observations are available for some parts of the system. It is therefore frustrating that this can quite often lead to a poorer result. For example, where some aspect of the model's predictions after calibration drift away from the evidence provided by the data which didn't occur when only a few observations were available. The suspicion is that the issue has got something to do with the large imbalance of data available for different parts of the system. Especially since it is the performance of the part of the system that is only sparsely observed that has degraded. The temptation then is to try to rebalance the data in some way and recapture previous acceptable model performance after calibration. The situation seems somewhat analogous to the drop in model performance that can occur when an aspect of the realism of a process based model is improved. Here the issue is that the model improvement has exposed the presence of previously hidden compensating errors. The solution is clearly to improve the other parts of the model. If this is a good analogy then throwing out data to improve the calibration would seem to be the wrong approach if the greater quantity of data has exposed previously hidden systematic weaknesses in the model. 
+ 
+Our aim here was to use simple idealised calibrations to bring clarity about why calibration sometimes degrade model performance when there is a large imbalance in data.  
+
+
+
 ## Identifying the issue with unbalanced dataset BC 
 
  * Unbalanced data are not an issue though uncertainty is larger.
