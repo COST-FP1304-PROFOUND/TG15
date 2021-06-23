@@ -187,18 +187,20 @@ completely from the VSEM to simulate a major structural error. This is done by i
 
 ### Observational data with known bias
 
-In addition to considering model structural error, we also wish to investigate the influence of observations with biases since all observational data will to a greater or lesser extent contain biases. Here we simulate data biases by multiplying the soil data by two to represent a considerable multiplicative bias in the observations of soil carbon. 
+In addition to considering model structural error, we also wish to investigate the influence of observations with biases since all observational data will to a greater or lesser extent contain biases. Here we simulate data biases by multiplying the soil data by 0.8 to represent a considerable multiplicative bias in the observations of soil carbon. 
 
 ## Modified Likelihood to represent structural errors in the model and systematic biases in the data. {modLike}
 
-A general principle in modelling is to begin with the simplest approach and only move on to more complicated solutions if the simple approach fails. We adopt that approach here, by representing model structural error and data systematic bias in the likelihood function by very simple multiplicative and additive constants to the model outputs. Whilst we could include these terms for all of the parts of the system where we have calibration data available we opted here to only include terms on the parts of the system where we had plentiful data (NEE and soil carbon). Therefore we have four extra parameters to represent addition and multiplicative error for each of NEE and soil carbon (modaddNEE, modmultNEE, modaddCs and modmultCs). The priors for each of these are as follows. 
+A general principle in modelling is to begin with the simplest approach and only move on to more complicated solutions if the simple approach fails. We adopt that approach here, by representing model structural error and data systematic bias in the likelihood function by very simple multiplicative and additive constants to the model outputs. We added terms for each of the three outputs for which we have calibration data namely (NEE, Cs and CV). Therefore we have six extra parameters to represent addition and multiplicative error for each of NEE, soil carbon and aboveground carbon (modaddNEE, modmultNEE, modaddCs, modmultCs,modaddCv and modmultCv). The priors for each of these are as follows. 
 
 | parameter name |  min  | max  |
 |:---------------|-------|------|
 | modmultNEE     |  0.1  | 2.0  |
 | modmultCs      |  0.1  | 2.0  |
+| modmultCv      |  0.1  | 2.0  |
 | modaddNEE      | -0.01 | 0.01 |
 | modaddCs       | -1.0  | 1.0  |
+| modaddCv       | -1.0  | 1.0  |
 
 ```{r include=FALSE}
 ## Load older versions of BayesianTools R routines needed in TG15
