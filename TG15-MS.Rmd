@@ -1,6 +1,6 @@
 ---
 title: "Identifying why Bayesian Calibration of process-based models with unbalanced quantities of calibration data can be challenging: The significance of model structural deficiencies and data biases."
-author: "David Cameron, Florian Hartig, Francesco Minnuno, Bjoern Reinking, Marcel Van Oijen and Mike Dietze"
+author: "D. R. Cameron, F. Hartig, F. Minnuno, J. Oberpriller, B. Reineking, M. Van Oijen and M. Dietze"
 date: '`r Sys.Date()`'
 output:
 #  slidy_presentation: default
@@ -244,13 +244,18 @@ MAP  <- calcMAP("MAP.Rdata")
 ```
 
 
-```{r echo=FALSE, out.width="45%", out.height="45%",fig.show='hold',fig.align='center', fig.cap="\\label{fig:Par}blank for now"}
+```{r echo=FALSE, out.width="45%", out.height="45%",fig.show='hold',fig.align='center', fig.cap="\\label{fig:Par}Parameters plot."}
 knitr::include_graphics(c("/home/david/TG15/pDistrNew/KEXT.png","/home/david/TG15/pDistrNew/LUE.png","/home/david/TG15/pDistrNew/tauV.png","/home/david/TG15/pDistrNew/tauS.png","/home/david/TG15/pDistrNew/Cs.png","/home/david/TG15/pDistrNew/Cv.png"))
 ```
 
 ```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModbalDataOut}Perfect model, balanced data (NEE, Cv, Cs: 2048 obs). Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
 firstFig(out1,refPars)
 ```
+
+```{r echo=FALSE, out.width="100%", out.height="100%",fig.show='hold',fig.align='center', fig.cap="\\label{fig:Par}Timeseries plot."}
+knitr::include_graphics("timeseriesSelNew.png")
+```
+
 
 ## Perfect model and unbalanced data Pu
 
@@ -845,29 +850,12 @@ out18 <- fitVSEM("run18.RData",iter=1200000, params=addPars)
 ```
 
 # Discussion
+
 ## Unbalanced data in Bayesian calibration: Identifying the issue
 
 Our aim initially was to illustrate as clearly as possible the root cause behind why including unbalanced data in Bayesian Calibration (BC) can cause challenges. Firstly we illustrated that there was no issue with including very unbalanced data in BC if the data had unbiased errors and the model was perfect. So there is no intrinsic issue in using very unbalanced data in BC, the issues that we often find must be due to something else. Next we introduced a very significant model error (removing an important model process) but we initially kept the quantities of data balanced. The model predictions after BC were close to the data, which is typically what we find when using balanced data in BC. In a 'real world' calibration, with data as measurements taken from the environment, we do not know the extent of the model error present nor the best or true settings of the parameters, so this BC with balanced data would be considered a successful calibration. In our artificial BC we have access to information that we would not typically have because we know the true parameter settings. Hence, we find that after BC the parameters are far from their true values with high confidence. 'From the perspective of the calibration' the goal is to diminish the model-data difference. The likelihood cannot distinguish between model-data difference due to parameter or model structural error and has no means to change the structure of the model so model-data difference is reduced by solely by the parameters departing significantly from their true values. In this way, the calibration 'absorbs' the model error into wrong settings of the parameters so that model predictions against the data used in the calibration are acceptable. Other model predictions may be very poor but we have no other data available to assess this. Therefore, in this 'balanced data' calibration the model error is giving problems in the BC but these issues would normally be hidden from us and we would deem the calibration a success. It is normally only when we include unbalanced data in the calibration that the model predictions against the calibration data are poor that we identify an issue in the calibration and potentially wrongly perceive that it is an issue with the unbalanced data. Indeed, while the model predictions are poorer after calibration with the unbalanced data, the parameters are if anything closer to their true value and less confidently wrong because the erroneous model is fitted to fewer data points and from the perspective of the calibration it is not so important that the model-data difference is larger for the output with fewer observations present, hence the parameters need not depart so much from their true values to reduce model-data difference for the majority of the data points included in the calibration. These idealised calibrations demonstrate cleanly that the underlying issue with calibrating models with unbalanced data is not the unbalance in the data, but that models have hidden structural deficiencies that often remain hidden when we calibrate with balanced datasets but whose influence is seen in poor predictions after calibration with unbalanced datasets. The underlying issue is that when the model is wrong that model-data differences in the likelihood is reduced by the parameters departing from their true or best value. This is noticed in the unbalanced calibration but hidden in the balanced calibration. The root issue identified here is the presence of the model error not any imbalance in the calibration data. 
 
 Further, we repeated the above analysis but now included a large bias in the calibration data rather than an error in the model. We find very similar results because 'from the perspective of the calibration' what we have introduced is just a slightly different model-data difference that as before is reduced in the calibration by setting the parameter values away from their true values so that the data bias is effectively absorbed by erroneous parameter values. Here we have demonstrated that very similar issues occur with unbalanced data whether we have a model error or a data bias because in the likelihood and hence the calibration, the issue is effectively the same. The likelihood cannot distinguish whether the model-data difference is due to model systematic error, data bias or poorly set parameters and the only means to reduce the difference is to change the parameter settings. As for the previous case, with model error, the underlying data bias can remain hidden and it is possible to erroneously perceive that the issue in the calibration is due to unbalanced data rather than a systematic bias in the data. 
-
-
-## Identifying the issue including unbalanced data in Bayesian calibration.
-
- * Calibration with a perfect model and unbalanced data has demonstrated that there is no intrinsic issue with unbalanced data. 
- * Model error is introduced first with balanced data. We do not normally know the true parameter settings so in terms of model predictions would be regarded as a successful calibration.
- * The goal ‘from the perspective of the calibration’ is to diminish model-data difference. 
- * The likelihood cannot distinguish between model-data difference due to parameter or model structural error. Calibration has no means of changing the structure of the model so model-data difference can only be diminished by the parameters departing from their true values.
- * In this way model structural error is 'absorbed' by the parameters. 
- * There is quite a lot of data present in calibration so the result, in terms of the parameters, is confidently wrong. 
- * It is when the model has an error and data is unbalanced that we start to see an issue in the model predictions versus data.
- * Now after calibration the model predictions are also confidently wrong. 
- * Parameters are if anything better after calibration than for balanced data because fewer data points need to be fitted with the erroneous model. 
- * From its 'own perspective' the calibration is 'doing the right thing' as there is lots of evidence in the likelihood that the model is off from soil and NEE data but only a little evidence that model is far away from vegetation data.
- * These idealised calibrations have demonstrated that the issue is with the model error causing a model-data difference where the only means of reducing the difference is for the parameters to depart from their true value.
- * The root issue is the presence of the model error not the imbalance in calibration data. 
- * From the perspective of the calibration systematic data bias is just another model-data mismatch that can be reduced by changed parameter values. 
- * Hence there is a lot of similarity between the influence of model error and data systematic bias in the calibration. The likelihood cannot distinguish model-data difference due to model error, wrong parameter values or data systematic bias.
 
 ## Diagnostic tool (Fig. \ref{fig:rmsMAPObs})
 
