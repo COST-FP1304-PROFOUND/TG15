@@ -1,5 +1,5 @@
 ---
-title: "Identifying why Bayesian Calibration of process-based models with unbalanced quantities of calibration data can be challenging: The significance of model structural deficiencies and data biases."
+title: "Identifying why the Bayesian calibration of process-based models with unbalanced quantities of calibration data can be challenging: The significance of model structural deficiencies and data biases."
 author: "D. R. Cameron, F. Hartig, F. Minnuno, J. Oberpriller, B. Reineking, M. Van Oijen and M. Dietze"
 date: '`r Sys.Date()`'
 output:
@@ -12,7 +12,7 @@ output:
     toc: no
     keep_tex: true	
 abstract: |
-  Calibrating ecological process-based models using multiple data streams often improves the identifiability of model parameters, provides model predictions after calibration that are more consistent with underlying processes and helps to avoid compensating errors. However, using multiple constraints can sometimes also lead to problems, for example causing predictions for some variables to get worse, and this is particularly common when combining data sources with very different sample sizes. Such unbalanced model-data fusion efforts are becoming increasingly common, for example when combining manual and automated measurements. Here we use a series of simulated data experiments to illustrate the challenges that can occur when combining data, with a particular focus on unbalanced data and the role of systematic errors (i.e. biases) in models and data. We find that unbalanced data by itself is not the problem -- when fitting simulated data to the “true” model we can correctly recover model parameters and the true dynamics of latent variables even in the presence of (random) observation errors. Despite the popularity of approaches that focus on “weighting” data sets differently, this illustrates that the issue at hand is not one of sample size or information content per se. However, when there are systematic errors in the model or the data, we cannot recover the correct parameters, and the modeled dynamics of the low data volume variables can often depart significantly from the true values. To address these challenges we provide a diagnostic tool to help identify the impacts of unbalanced data and explore ways to account for systematic errors within statistical Likelihood functions. We show that even a simple linear bias correction can greatly improve the ability of the model to fit low-volume data and make accurate predictions. While doing so does not necessarily allow the model to recover the “true” model parameters, it does help us identify the presence of structural errors.
+  Calibrating ecological process-based models using multiple data streams often improves the identifiability of model parameters, provides model predictions after calibration that are more consistent with underlying processes and helps to avoid compensating errors. However, using multiple constraints can sometimes also lead to problems, for example causing predictions for some variables to get worse, and this is particularly common when combining data sources with very different sample sizes. Such unbalanced model-data fusion efforts are becoming increasingly common, for example when combining manual and automated measurements. Here we use a series of simulated data experiments to illustrate the challenges that can occur when combining data, with a particular focus on unbalanced data and the role of systematic errors (i.e. biases) in models and data. We find that unbalanced data by itself is not the problem -- when fitting simulated data to the “true” model we can correctly recover model parameters and the true dynamics of latent variables even in the presence of (random) observation errors. Despite the popularity of ad-hoc approaches that focus on “weighting” data sets differently, this illustrates that the issue at hand is not one of sample size or information content per se. However, when there are systematic errors in the model or the data, we cannot recover the correct parameters, and as a consequance the modeled dynamics of the low data volume variables can often depart significantly from the true values. To address these challenges we provide a diagnostic tool to help identify whether the issue of model/data error is root cause of poor outcomes when calibrating with unbalanced data. The tool also helps to identify what extent of imbalance is required before the calibration starts to ignore the more sparce data. Finally, we demonstate that by representing uncertainty due to model structural errors and data biases in the calibration can greatly the likelihood of the model fitting the low-volume dataand thus make good predictions with a quantification of uncertaiinty that includes the true system. This emphasises the importance of considering model structural deficiencies and data systematic biases in the Bayesian calibration of ecological process-based models and demonstrates the lack of utility of ad-hoc measures that change the reliability of calibration data to achieve a false balance and hence a less useful arbitrary quantification of uncertainty in model predictions.
 #  beamer_presentation:
 #    incremental: true
 #    includes:
@@ -38,37 +38,31 @@ exptPath = "RDataWorkingMSILongNew/"
 
 Modellers in ecology and earth system sciences increasingly rely on complex computer simulations (Fisher and Koven 2020, Fisher et al 2018), coupled with methods to combine models and data to generate precise forecasts and improve system understanding. 
 
-In principle, the process of constraining model uncertainties via calibration (aka inverse modelling or model-data fusion, e.g. Hartig et al., 2012, Dietze et al. 2018) is relatively straightforward. The idea is to infer models (and their parameters) that are in agreement with the observed ecological and environmental data. This can be achieved via informal calibration or optimization procedures (citations), but as increasingly more data has become available in the recent years (citations), the field has moved towards formal statistical calibration methods based on likelihood or Bayesian statistics (CITATIONS). The methods allow formal parameter estimations for complex system models, and to project these uncertainties to model predictions, for example under climate change (citation). 
+In principle, the process of constraining model uncertainties via calibration (aka inverse modelling or model-data fusion, e.g. Hartig et al., 2012, Dietze et al. 2018) is relatively straightforward. The idea is to infer models (and their parameters) that are in agreement with the observed ecological and environmental data. This can be achieved via informal calibration or optimization procedures (citations), but as increasingly more data has become available in the recent years (citations), the field has moved towards formal statistical calibration methods based on likelihood or Bayesian statistics (CITATIONS). The methods allow formal parameter estimations for process-based models, and to project these uncertainties to model predictions, for example under climate change (citation). 
  
-In practice however, the Bayesian Calibration (BC) of ecological process-based models can be challenging. For example there can be difficulties in calibrating process-based models with observational data representing multiple parts of the system being predicted by the model. In principle, the combination of heterogeneous data types in BC is straightforward, and simply amounts to multiplying the likelihoods for the individual data streams. In practice, however, researchers often observe problems when attempting a naive calibration with multiple constraints. Issues are particularly common when the data streams differ greatly in the quantity of data available. Such an imbalanced calibration dataset is now common since low-volumes of manually-collected field data are frequently combined with high-volumes of automatically-collected data either from in situ sensors (e.g. eddy-covariance) or via remote sensing. A common observation in this situation is that the outputs from BC (e.g. calibrated model parameters) are virtually identical to the results achieved by fitting the model to the high-volume data by itself, and in obvious disagreement with the lower-volume data type (e.g. Cameron et al in review 2018). 
+In practice however, the Bayesian Calibration (BC) of ecological process-based models (PBMs) can be challenging. For example there can be difficulties in calibrating PBMs with observational data representing multiple parts of the system being predicted by the model. In principle, the combination of heterogeneous data types in BC is straightforward, and simply amounts to multiplying the likelihoods for the individual data streams. In practice, however, researchers often observe problems when attempting a naive calibration with multiple constraints. Issues are particularly common when the data streams differ greatly in the quantity of data available. Such an imbalanced calibration dataset is now common since low-volumes of manually-collected field data are frequently combined with high-volumes of automatically-collected data either from in situ sensors (e.g. eddy-covariance) or via remote sensing. A common observation in this situation is that the outputs from BC (e.g. calibrated model parameters) are virtually identical to the results achieved by fitting the model to the high-volume data by itself, and in obvious disagreement with the lower-volume data type (e.g. Cameron et al in review 2018). 
  
-Since each data point is usually modelled as an independent piece of information in a Likelihood, the influence of the sparse observations can often be overwhelmed by the higher frequency data (Cameron et al in review 2018). In essence, the data fusion ignores the low volume data, which gets swamped by the much larger sample size of the high volume data. Moreover, if the model cannot achieve a good fit to both data streams at the same time, it will logically favour fitting the common data stream, at the expense of worse predictions for model outputs with fewer data (Oberpriller et al., 2021).
+Since each data point is usually modelled as an independent piece of information in a Likelihood, the influence of the sparse observations can often be overwhelmed by the higher frequency data (Cameron et al in review 2018). In essence, the BC ignores the low volume data, which gets swamped by the much larger sample size of the high volume data. Moreover, if the model cannot achieve a good fit to both data streams at the same time, it will logically favour fitting the common data stream, at the expense of worse predictions for model outputs with fewer data (Oberpriller et al., 2021).
 
 This is highly undesirable as the lower-volume data often represents a part of the system that is crucial for the future projections (eg soil carbon and nitrogen), has relatively high uncertainty and has required higher labour costs to collect. As increasingly more data becomes available this issue of extremely imbalanced datasets is likely to worsen significantly. For example, NASA’s earth observation system is expected to grow by an order of magnitude, from an already overwhelming ~5PB/yr in 2018-2020 to a staggering ~50PB/yr, as soon as 2022 (https://earthdata.nasa.gov/eosdis/cloud-evolution).
 
-Since the apparent issue is the large imbalance in the data it would then seem naively logical to try and correct that balance in some way. Unfortunately it is difficult to follow such an approach without resorting to ad-hoc solutions. For example, it is common to thin-out, aggregate or reweigh the calibration datasets so that they have a more balanced influence on the BC. The main purpose is to down-weigh the high-volume data so that the different data models are more balanced. For example, Medvigy et al 2009 constrained the ED2 model to nine data constraints, including eddy covariance at the annual, monthly, and hourly scale and forest growth and mortality data, and weighted each part of the likelihood equally. (Keenan et al. 2013) similarly weighted each dataset equally when calibrating the FöBAAR model to 16 distinct data constraints. [Cailleret et al. 2020] also equally weighted basal area increment and stem number distribution in the calibration of the forest model ForClim. (Thum et al. 2017) constrained ORCIDEE with multiple constraints, weighting each by sample size. (Richardson et al. 2010) calibrated the DALEC model by optimizing the product of the log-Likelihoods across six data constraints, which similarly weights all data sets as equally important. Unfortunately, this approach has no basis in probability theory largely since it makes no logical sense that the weight or significance of a dataset in the calibration should be determined by the presence of another more sparse dataset. The significance of a dataset in the calibration should be determined the reliability of that dataset alone. By arbitrarily changing the reliability of the calibration data we are also throwing away potentially very useful information that can be used to improve out models. Indeed the purpose of BC is to update our subjective prior knowledge with more objective evidence taken from observations. By reweighing the data we reintroduce our subjective control over the calibration by some measure of how close we want the model to fit the observations after calibration. While pragmatic, reweighing the observation does not seem to be the right approach unless there are no other possible solutions. Much better then is to form our solutions based on the underlying reasons for why unbalanced data cause challenges in the BC of ecological PBMs. 
+Since the apparent issue is the large imbalance in the data it would then seem naively logical to try and correct that balance in some way. Unfortunately it is difficult to follow such an approach without resorting to ad-hoc solutions. For example, it is common to thin-out, aggregate or reweigh the calibration datasets so that they have a more balanced influence on the BC. The main purpose is to down-weigh the high-volume data so that the different data models are more balanced. For example, Medvigy et al 2009 constrained the ED2 model to nine data constraints, including eddy covariance at the annual, monthly, and hourly scale and forest growth and mortality data, and weighted each part of the likelihood equally. (Keenan et al. 2013) similarly weighted each dataset equally when calibrating the FöBAAR model to 16 distinct data constraints. [Cailleret et al. 2020] also equally weighted basal area increment and stem number distribution in the calibration of the forest model ForClim. (Thum et al. 2017) constrained ORCIDEE with multiple constraints, weighting each by sample size. (Richardson et al. 2010) calibrated the DALEC model by optimizing the product of the log-Likelihoods across six data constraints, which similarly weights all data sets as equally important. Unfortunately, this approach has no basis in probability theory largely since it makes no logical sense that the weight or significance of a dataset in the calibration should be determined by the presence of another more sparse dataset. The significance of a dataset in the calibration should be determined the reliability of that dataset alone. By arbitrarily changing the reliability of the calibration data we are also throwing away potentially useful information that can be used to improve models. Indeed, the purpose of BC is to update our subjective prior knowledge with more objective evidence taken from observations. By reweighing the data we reintroduce our subjective control over the calibration by some measure of how close we want the model to fit the observations after calibration. While pragmatic, reweighing the observation does not seem to be the right approach unless there are no other possible solutions. Much better to form our solutions based on the roots causes that lead to poor outcomes in the BC of PBMs with unbalanced data. 
 
-The underlying reasons for challenges with unbalanced data in the BC of process-based models, namely model and data error, are known (Oberpriller et al., 2021) but are not immediately apparent and needs to be more widely understood to help avoid the practise of resorting to ad-hoc and hence fundamentally less useful approaches. The aim of this paper is firstly to identify and hence illustrate as clearly as possible using clear-cut virtual data experiments the underlying reasons for the issues that are commonly found when using unbalanced datasets in BC. Secondly we offer a diagnostic tool to help researchers identify whether issues that they are facing in BC could be attributed to the interaction of imbalanced calibration data with model/data error rather than some other cause. Finally we illustrate, as simply as possible, an approach to BC that avoids the need to make ad-hoc choices. 
+The underlying reasons for challenges with unbalanced data in the BC of process-based models, namely model and data error, are known (Oberpriller et al., 2021) but are not immediately apparent and hence the practise of resorting to ad-hoc and hence fundamentally less useful approaches is still common. This motivates one aim of this paper which is identify as simply as possible using clear-cut virtual data experiments the underlying reasons for the issues that are commonly found when using unbalanced datasets in BC. Secondly we offer a diagnostic tool to help researchers identify whether issues that they are facing in BC could be attributed to the interaction of imbalanced calibration data with model/data error rather than some other cause. Finally we demonstrate, as simply as possible that including uncertainty due to model structural error and data systematic bias in the BC improves model predictions and provides a demonstrably useful quantification of uncertainty that we argue has greater utility than can be found using more ad-hoc arbitrary methods.
 
 # Methods
 
 ## VSEM model
 
-Here we present the Very Simple Ecosystem Model (VSEM). The model was created to help illustrate the
-main ideas that we present here. The model was designed to be very simple rather then realistic, but
-yet resemble many typical, but more complicated, process-based ecosystem models (PBMs) that are
-commonly used in carbon growth type ecosystem modelling.
+Here we present the Very Simple Ecosystem Model (VSEM). The model was created to help illustrate the main ideas that we present here. The model was designed to be very simple rather then realistic, but yet resemble many typical, but more complicated, process-based ecosystem models (PBMs) that are commonly used in carbon growth type ecosystem modelling.
 
-In essence, the model determines the accumulation of carbon in the plant and soil from the growth of
-the plant via photosynthesis and senescence to the soil which respires carbon back to the
-atmosphere. The timestep of the VSEM is daily. 
+In essence, the model determines the accumulation of carbon in the plant and soil from the growth of the plant via photosynthesis and senescence to the soil which respires carbon back to the atmosphere. The timestep of the VSEM is daily.
 
 ### VSEM input data: Photosythetically active radiation (PAR)
 
 The VSEM requires only one input dataset to drive the model namely daily PAR. 
 
-Since we are interested in virtual experiments here we generate the PAR input data using an
-sinusoidal function.
+Since we are interested in virtual experiments here we generate the PAR input data using an sinusoidal function.
 
 \begin{align}
 PAR &= (\lvert \sin ( Days /365 \times \pi)  + \epsilon \rvert) \times 10 \\
@@ -99,7 +93,7 @@ NPP &= (1 - GAMMA) * GPP
 
 ### Carbon pool state equations
 
-There are three state equations [@Gill] representing the change in time of vegetation ($C_v$), root ($C_r$)
+There are three state equations representing the change in time of vegetation ($C_v$), root ($C_r$)
 and soil ($C_s$) carbon pools. The Net Primary Productivity (NPP) is allocated to above (vegetation)
 and below(root) ground carbon pools via a fixed allocation fraction. Carbon is lost from the plant
 pools to a single soil pool via fixed vegetation and root turnover rates. Heterotropic respiration
@@ -129,71 +123,89 @@ in the soil is determined via a soil turnover rate.
 
 ## Bayesian Calibration
 
-In Bayesian Calibration, our aim is to quantify the probability of the model parameters ($\theta$) being correct given the calibration data (P($\theta$ | D). Since this is not straightforward to calculate we make use of Bayes equation. 
+In Bayesian Calibration, our aim is to quantify the probability of the model parameters ($\theta$) being correct given the calibration data (D) (P($\theta$ | D). Since this is not straightforward to calculate we make use of Bayes equation. 
 
 \begin{equation}
 P(\theta | D) \propto P(\theta) L(D | \theta)
 \end{equation}
 
-Where P($\theta$ | D), P($\theta$) and L(D|$\theta$) are known as the posterior, prior and likelihood respectively. Since it is not possible to calculate the likelihood for a numerical model such as VSEM analytically we sample from it and the prior using a Monte Carlo approach to sample from the posterior. As a way of making this sampling more efficient we use the DREAMzs algorithm in a Markov Chain Monte Carlo (MCMC) sampling  
+Where P($\theta$ | D), P($\theta$) and L(D|$\theta$) are known as the posterior, prior and likelihood respectively. Since it is not possible to calculate the likelihood for a numerical model such as VSEM analytically we sample from it and the prior using a Monte Carlo approach to sample from the posterior. As a way of making this sampling more efficient we use the DREAMzs algorithm in a Markov Chain Monte Carlo (MCMC) sampling.
 
- * brief summary of DREAMzs algorithm
+ * TODO: brief summary of DREAMzs algorithm
 
-The DREAMzs algorithm and MCMC functions that we use here are from the BayesianTools package. 
+The DREAMzs algorithm and MCMC functions that we use here are from the BayesianTools package (https://cran.r-project.org/web/packages/BayesianTools/index.html).
 
 ### Prior
 
 Here we adopt a very simple uniform prior since our aim here is to identify the issue using a simple and therefore easy to interpret modelling approach. 
 
-We need to be able to set the values for two parameters, allocation to vegetation (Av) and initial root pool for the virtual experiments described below. Since the root pool is not part of the model with the error we also exclude tauR from the calibration 
+We need to be able to control the values for two parameters, allocation to vegetation (Av) and initial root pool for the virtual experiments described below. Since the root pool is not part of the model with the error we also exclude tauR from the calibration 
 
 Of the remaining parameters LAR and GAMMA were removed from the calibration to avoid nonidentifiability issues. 
 
 The remaining parameters are listed below along with the uniform prior ranges used. 
 
-| parameter | min    |  max   |
+| parameter | min    |  max  |
 |:----------|--------|-------|
 | KEXT      | 0.2    | 1.0   |
 | LUE       | 0.0002 | 0.004 |
-| tauV      | 200    | 3000  |s
+| tauV      | 200    | 3000  |
 | tauS      | 4000   | 50000 |
 | Cv        | 0.0    | 400   | 
 | Cs        | 0.0    | 1000  |
 
 ## Idealised experiments with virtual data from VSEM
-```{r child = 'TG15-virtualData.Rmd'}
+
+```{r include=FALSE}
+if(!file.exists(paste(exptPath,"obs.RData",sep=""))|CLEAN.BUILD){
+  set.seed(123)
+  ndays                 <- 2048
+  PAR                   <- VSEMcreatePAR(1:ndays)
+  refPars               <- VSEMgetDefaults()
+  nvar                  <-  nrow(refPars)+1
+  ## add SD
+  refPars[nvar,]          <- c(0.1, 0.001, 0.5)
+  rownames(refPars)[nvar] <- "error-coeffVar"
+  ## calculate 'true' output and pseudodata
+  referenceData         <- VSEM(refPars$best[1:(nvar-1)], PAR)
+  obs                   <- referenceData + rnorm(length(referenceData), sd = (abs(referenceData) + 1E-7) * refPars$best[nvar])
+  ## set the minimum sd for NEE to 5 kgC /m^2 /day. This is to avoid very small uncertainty for NEE values close to zero
+  obs[,1] <- referenceData[,1] + rnorm(length(referenceData[,1]), sd = pmax((abs(referenceData[,1]) + 1E-7) * refPars$best[nvar],0.0005))
+  save(nvar,ndays,PAR,refPars,referenceData,obs,file=paste(exptPath,"obs.RData",sep=""))
+  if(PLOT.DIAGNOSTICS){
+    par(mfrow=c(3,1))
+    for(i in 1:3){
+      plot(obs[,i])
+      lines(referenceData[,i],col=3,lwd=3)
+    }
+  }
+} else {
+  load(paste(exptPath,"obs.RData",sep=""))
+  rownames(refPars)[nvar] <- "error-coeffVar"
+}
 ```
 
 ### Likelihood 
 
-Given that we added Gaussian noise to the model output to produce the virtual data, a univariate Gaussian likelihood is the obvious choice. In section (\@ref(modLike)) we discuss modifications to this simple likelihood to represent model structural error and data systematic bias. 
+Given that we added Gaussian noise to the model output to produce the virtual data, a univariate Gaussian likelihood is the obvious choice. In section (\ref{sec:modLike}) we discuss modifications to this simple likelihood to represent model structural error and data systematic bias. 
 
-### Perfect model
+### Perfect model \label{sec:perfectModel}
 
-A central theme that we consider here is the significance of a perfect model structure with all the
-processes modelled perfectly. The only way to ensure a perfect model is to take the output from the
-VSEM and consider this as virtual data in the BC. Gaussian noise is added to the model output to
-represent system varability that is not captured by the model (as is away the case) but crucially
-can be represented perfectly by the likelihood function that we use in the BC. The observations are
-for the full 2048 day length of the VSEM for NEE, vegetative carbon and soil carbon.
+A central theme that we consider here is the significance of a perfect model structure that is to say where all the processes are represented perfectly. The only way to ensure such a perfect model is to take the output from the VSEM and consider this as virtual data in the BC. Gaussian noise is added to the model output to represent system varability that is not captured by the model but crucially can be represented perfectly by the likelihood function that we use in the BC. The observations are for the full 2048 day length of the VSEM for Net Ecosystem Exchange (NEE), vegetative carbon and soil carbon.
 
-For the vegetaive carbon we create a sparse dataset to simulate having an imbalance between
-observations available for vegetative carbon, soil carbon and NEE. The sparse dataset has six
-observations for days 2, 404, 780, 1100, 1500 and 1840.
+For the vegetative carbon we create a sparse dataset to simulate having an imbalance between observations available for vegetative carbon, soil carbon and NEE. The sparse dataset has six observations for days 2, 404, 780, 1100, 1500 and 1840.
 
-### Model with known structural error
+### Model with known structural error \label{sec:errorModel}
 
-To simulate a model with a known structural error we consider a situation where a major model
-process/structure is unknown and therefore missing in the model. Here we remove the root pool
-completely from the VSEM to simulate a major structural error. This is done by initialising the root pool to zero and setting the root allocation fraction to zero so that all the NPP is now allocated to the vegetation pool. This also of course shuts off any senescence from the root pool to the soil. This gives the model a major structural error as we might have in a real situation whilst being sufficiently simple that we can still interpret the influence of the error.
+To simulate a model with a known structural error we consider a situation where a major model process/structure is unknown and therefore missing in the model. Here we remove the root pool completely from the VSEM to simulate a major structural error. This is done by initialising the root pool to zero and setting the root allocation fraction to zero so that all the NPP is now allocated to the vegetation pool. This also of course shuts off any senescence from the root pool to the soil. This gives the model a major structural error as we might have in a real situation whilst being sufficiently simple that we can still interpret the influence of the error.
 
-### Observational data with known bias
+### Observational data with known bias \label{sec:dataBias}
 
 In addition to considering model structural error, we also wish to investigate the influence of observations with biases since all observational data will to a greater or lesser extent contain biases. Here we simulate data biases by multiplying the soil data by 0.8 to represent a considerable multiplicative bias in the observations of soil carbon. 
 
-## Modified Likelihood to represent structural errors in the model and systematic biases in the data. {modLike}
+## Modified Likelihood to represent structural errors in the model and systematic biases in the data. \label{sec:modLike}
 
-A general principle in modelling is to begin with the simplest approach and only move on to more complicated solutions if the simple approach fails. We adopt that approach here, by representing model structural error and data systematic bias in the likelihood function by very simple multiplicative and additive constants to the model outputs. We added terms for each of the three outputs for which we have calibration data namely (NEE, Cs and CV). Therefore we have six extra parameters to represent addition and multiplicative error for each of NEE, soil carbon and aboveground carbon (modaddNEE, modmultNEE, modaddCs, modmultCs,modaddCv and modmultCv). The priors for each of these are as follows. 
+A general principle in modelling is to begin with the simplest approach and only move on to more complicated solutions if the simple approach fails. We adopt that approach here, by representing model structural error and data systematic bias in the likelihood function by very simple multiplicative and additive constants to the model outputs. We add terms for each of the three outputs for which we have calibration data namely (NEE, Cs and Cv). Therefore we have six extra parameters to represent addition and multiplicative error for each of NEE, soil carbon and vegetative carbon (modaddNEE, modmultNEE, modaddCs, modmultCs,modaddCv and modmultCv). The priors for each of these are given in the table below. 
 
 | parameter name |  min  | max  |
 |:---------------|-------|------|
@@ -210,14 +222,15 @@ source("TG15-BayesianToolsOld.R")
 source("helperFunctions.R")
 ```
 
+# Identifying the issue \label{sec:identIssue}
 
-# Identifying the issue
+In this section we investigate the underlying issue that can cause problems when we try to calibrate a model with a data set that has very unbalanced numbers of observations from different parts of the system. We do this by breaking the problem into parts to investigate the individual influence of model structural error and data bias when calibrating with balanced and unbalanced datasets. We start with the idealised situation of a perfect model and a perfect calibration dataset with a balanced number of observations for each part of the system. 
 
-In this section we investigate the underlying issue that can cause problems when we try to calibrate a model with a data set that has very unbalanced numbers of observations from different parts of the system. We do this by breaking the problem into parts to investigate the individual influence of model structural error and data bias when calibrating with balanced and unbalanced datasets. We start with the idealised situation of a perfect and a perfect calibration dataset with a balanced number of observations for each part of the system. 
+In the following sections will refer to posterior marginal parameter plots in Fig (\ref{fig:Par}) and timeseries plots in Fig (\ref{fig:timeseries}).
 
 ## Perfect model and balanced data Pb
 
-Looking first at the parameters we find that the 'true' parameters are largely recaptured by the calibration. The marginal posterior distributions are centred around the 'truth' line and the uncertainty versus the prior has reduced significantly. The model outputs for NEE, Cv and Cs are also centred around the truth line with the 50% quantile line matching the truth line closely. The posterior uncertainty is small and the predictive interval matches the uncertainty in the data as would be expected. This first calibration can be considered as a control against which all subsequent calibrations can be compared.
+Looking first at the parameters we find that the 'true' parameters are largely recaptured by the calibration. The marginal posterior distributions are centred around the 'truth' line and the uncertainty versus the prior has reduced significantly. The model outputs for NEE, Cv and Cs are also centred around the truth line (Fig \ref{fig:perModbalDataOut}) with the 50% quantile line matching the truth line closely. The posterior uncertainty is small and the predictive interval matches the uncertainty in the data as would be expected. This first calibration can be considered as a control against which all subsequent calibrations can be compared.
 
 ```{r include=FALSE}
 newPars <- refPars$best
@@ -256,14 +269,14 @@ knitr::include_graphics(c("/home/david/TG15/pDistrNew/KEXT.png","/home/david/TG1
 firstFig(out1,refPars)
 ```
 
-```{r echo=FALSE, out.width="100%", out.height="100%",fig.show='hold',fig.align='center', fig.cap="\\label{fig:Par}Timeseries plot."}
+```{r echo=FALSE, out.width="100%", out.height="100%",fig.show='hold',fig.align='center', fig.cap="\\label{fig:timeseries}Timeseries plot."}
 knitr::include_graphics("timeseriesSelNew.png")
 ```
 
 
 ## Perfect model and unbalanced data Pu
 
-We now consider what happens when we have a large imbalance in the calibration data. We do this by thinning out the number of observations for Cv from 2048 to just six observations whilst retaining the original 2048 observations for NEE and Cs; thus creating an O(3) imbalance. After calibration the parameters are still largely centred on the 'truth' line. For KEXT and especially tauV and Cv there has been an increase in marginal uncertainty but this would be expected since we have included less information in the calibration. In figure ... we see the outputs for Cv and Cs for Pu. For the remaining calibrations we do not include further plots of NEE as the plot does not show much change from that shown previously for Pb. For Cs also, there is little change from before (Pb) when the data was balanced. The Cv plot shows the six observations that were retained in the calibration. The posterior is still centred on the truth line with a larger posterior uncertainty as might be expected since far fewer data have been included. These results show that creating an imbalanced does not cause an issue in the calibration other than increasing the uncertainty. 
+We now consider what happens when we have a large imbalance in the calibration data. We do this by thinning out the number of observations for Cv from 2048 to just six observations (as described in section \ref{sec:perfectModel}) whilst retaining the original 2048 observations for NEE and Cs; thus creating an O(3) imbalance. After calibration the parameters are still largely centred on the 'truth' line. For KEXT and especially tauV and Cv there has been an increase in marginal uncertainty but this would be expected since we have included less information in the calibration. In Fig({fig:timeseries})  we see timeseries outputs for Cv and Cs for Pu. For the remaining calibrations we do not include further plots of NEE as the plot does not show much change from that shown previously for Pb. For Cs also, there is little change from before (Pb) when the data was balanced. The Cv plot shows the six observations that were retained in the calibration. The posterior is still centred on the truth line with a larger posterior uncertainty as might be expected since far fewer data have been included. These results show that creating an imbalanced does not cause an issue in the calibration other than to increase the uncertainty. 
 
 ```{r include=FALSE}
 newPars <- refPars$best
@@ -296,7 +309,7 @@ MAPunbal <- calcMAP("MAPunbal.Rdata")
 
 ## Model with error and balanced data Eb
 
-Here we create a known significant structural error in the model by effectively removing the root pool from the model see section... After calibration a number of parameters are now quite far away from their 'true' values. This is especially dramatic for tauV, which controls the turnover of vegetation, and is now lower, so that the rate of turnover of the vegetation pool has now more than doubled. The error causes all the new carbon to be allocated to the vegetation pool only. The increased turnover rate tries to compensate for this error in the model. Hence, the large departure of the parameters from their 'true' values has the effect of 'absorbing' some of the influence of the model structural error. The result is that the model outputs have not changed significantly (see supplementary material) from the perfect model run. These results illustrate that model performance against calibration data can still be acceptable even when very signifcant model errors are present so long as changed parameters settings somewhat 'absorb' the influence of the error. 
+Here we create a known significant structural error in the model by effectively removing the root pool from the model see section (\ref{sec:errorModel}). After calibration a number of parameters are now quite far away from their 'true' values. This is especially dramatic for tauV, which controls the turnover of vegetation, and is now lower, so that the rate of turnover of the vegetation pool has now more than doubled. The model error causes all the new carbon to be allocated to the vegetation pool only. The increased turnover rate tries to compensate for this error in the model. Hence, the large departure of the parameters from their 'true' values has the effect of 'absorbing' some of the influence of the model structural error. The result is that the model outputs have not changed significantly (see supplementary material) from the perfect model run. These results illustrate that model performance against calibration data can still be acceptable even when very signifcant model errors are present so long as changed parameters settings somewhat 'absorb' the influence of the error. 
 
 ```{r include=FALSE}
 
@@ -333,7 +346,7 @@ MAPErr <- calcMAP("MAPErr.Rdata")
 
 ## Model with error and unbalanced data Eu
 
-We now combine the influences of unbalanced data and model error, investigated in the previous two sections, into the calibration. Looking first at the marginal parameter distributions after calibration there are changes versus the Eb calibration which are significant but not huge. In production, KEXT has increased and LUE has decreased slightly compensating for each other. Belowground, parameters Cs and tauS are now closer to their 'true' value than in Eb. Similarly aboveground, tauV is now closer to its 'true' value then in the Eb calibration. In general, the change in parameters to compensate for the model structural error is less than for Eb. Looking at outputs for Cv and Cs, the calibration is fine for Cs (and also NEE not shown) but drifts away significantly from the six vegetation measurements. This is the typical behaviour for calibrations with a large data imbalance, the sparsely measured parts of the system are ignored at the expense of the parts of the system with many observations. This calibration, along with the result from the previous two (Pu and Eb), make it clear that the model structural error is key in creating an issue when calibrating a model with a large imbalance in data. 
+We now combine the influences of unbalanced data and model error, investigated in the previous two sections, into the calibration. Looking first at the marginal parameter distributions after calibration there are changes versus the Eb calibration which are significant but not huge. In production, KEXT has increased and LUE has decreased slightly compensating for each other. Belowground, parameters Cs and tauS are now closer to their 'true' value than in Eb. Similarly aboveground, tauV is now closer to its 'true' value then in the Eb calibration. In general, the change in parameters to compensate for the model structural error is less than for Eb. Looking at the timeseries outputs for Cv and Cs, the model prediction is fine for Cs (and also NEE not shown) but drifts away significantly from the six vegetation measurements. This is the typical behaviour for calibrations with a large data imbalance, the sparsely measured parts of the system are ignored at the expense of the parts of the system with many observations. This calibration, along with the result from the previous two (Pu and Eb), make it clear that the model structural error is key in creating an issue when calibrating a model with a large imbalance in data. 
 
 ```{r include=FALSE}
 newPars <- refPars$best
@@ -368,7 +381,7 @@ MAPErrunbal <- calcMAP("MAPErrunbal.Rdata")
 
 ## Perfect model and balanced data with a multiplicative bias PbB
 
-We now investigate the influence of data bias on the calibration. As presented in section..., we create a multiplicative data bias by multiplying the soil carbon pool by 0.8. Similarly to Eb, parameters in the calibration do not all recover their 'true' values and hence 'absorb' the influence of data error. As might be expected this is most dramatic for the belowground parameters. The initial Cs parameter decreases significantly and tauS also decreases, increasing the turnover. This has the effect of decreasing the soil carbon pool to match the erroneous data. As before, these departures of the parameters from their 'true' value allows there to be a reasonably close match between the model outputs after calibration and the data (supplementary material). 
+We now investigate the influence of data bias on the calibration. As presented in section (\ref{sec:dataBias}), we create a multiplicative data bias by multiplying the soil carbon pool by 0.8. Similarly to Eb, parameters in the calibration do not all recover their 'true' values and hence 'absorb' the influence of data error. As might be expected this is most dramatic for the belowground parameters. The initial Cs parameter decreases significantly and tauS also decreases, increasing the turnover. This has the effect of decreasing the soil carbon pool to match the erroneous data. As before, these departures of the parameters from their 'true' value allows there to be a reasonably close match between the model outputs after calibration and the data (supplementary material). 
 
 ```{r include=FALSE}
 
@@ -413,7 +426,7 @@ obs <- obs.orig
 
 ## Perfect model and unbalanced data with a multiplicative bias PuB
 
-We now add the effect of unbalanced data to the calibration with the significant data bias. We look first at the parameter marginal distributions after calibration. In carbon production, KEXT is now larger than its true value increasing the carbon inputted to the system. This is counteracted by a lower LUE. Aboveground Cv is smaller and tauV significantly larger decreasing the turnover to the soil. This has the combined effect of passing on less carbon to the soil. Belowground, tauS is slightly closer to its true value than PbB, Cs has increased versus the PbB calibration pushing it back towards its true value. As the output plots, show the calibration is now somewhat ignoring the six vegetation observations in a similar way to what was found for the calibration with a model error. The main the 'effort' in the calibration is on matching the many erroneous soil carbon observations. These results show there can be issues calibrating with unbalanced datasets whether there is a model structural error or a significant data bias. 
+We now add the effect of unbalanced data to the calibration with the significant data bias. We look first at the parameter marginal distributions after calibration. In carbon production, KEXT is now larger than its true value increasing the carbon inputted to the system. This is counteracted by a lower LUE. Aboveground Cv is smaller and tauV significantly larger decreasing the turnover to the soil. This has the combined effect of passing on less carbon to the soil. Belowground, tauS is slightly closer to its true value than PbB, Cs has increased versus the PbB calibration pushing it back towards its true value. As the timeseries output plots show, the calibration is now somewhat ignoring the six vegetation observations in a similar way to what was found for the calibration with a model error. The main the 'effort' in the calibration is on matching the many erroneous soil carbon observations. These results show there can be issues calibrating with unbalanced datasets whether there is a model structural error or a significant data bias. 
 
 
 ```{r include=FALSE}
@@ -457,7 +470,7 @@ obs <- obs.orig
 
 ## Model with error and unbalanced data with a multiplicative bias EuB
 
-Now we combine the model structural error with the data bias and run the calibration with the unbalanced dataset. The two errors reinforce each other since the erroneous increase in the vegetation pool due to the missing root pool model error add to the issue of trying to match the erroneously low soil carbon observations. THe additive effect of the two errors just increase the issues that are found with unbalanced data with the model outputs after calibration even further away from the six Cv observations. 
+Now we combine the model structural error with the data bias and run the calibration with the unbalanced dataset. The two errors reinforce each other since the erroneous increase in the vegetation pool due to the missing root pool model error add to the issue of trying to match the erroneously low soil carbon observations. The additive effect of the two errors increase further the poor results that are found with unbalanced data with the model outputs after calibration even further away from the six Cv observations (supplementary material). 
 
 ```{r include=FALSE}
 #obs[,3] <- obs[,3] * 2.0
@@ -638,17 +651,17 @@ grid_arrange_shared_legend(p1, p2, p3, ncol = 1, nrow = 3)
 
 # Changes to the Likelihood to represent model and data errors
 
-The results from section... demonstrate that the underlying issue with including unbalanced data in the calibration is not the imbalance itself but that there are significant model structural errors or data systematic biases or both effecting the calibration. Therefore, here we aim to introduce terms in the likelihood which represent our uncertainty about what these errors could be. This uncertainty exists and hence it needs to be represented. Otherwise, as we saw in section..., the posterior uncertainty will be too small and parameters will find their greatest posterior probability far from their 'true' values, to try and compensate for the unrepresented errors in the calibration. 
+The results from section (\ref{sec:identIssue}) demonstrate that the underlying issue with including unbalanced data in the calibration is not the imbalance itself but that there are significant model structural errors or data systematic biases or both effecting the calibration. Therefore, here we aim to introduce terms in the likelihood which represent our uncertainty about what these errors could be. This uncertainty exists and hence it needs to be represented. Otherwise, as we saw in section (\ref{sec:identIssue}), the posterior uncertainty will be too small and parameters will find their greatest posterior probability far from their 'true' values, to try and compensate for the unrepresented errors in the calibration. 
 	
-As presented in section... here we represent these model and data errors as simply as possible using additive and multiplicative terms in the calibration data for NEE, Cv and Cs. This introduces six new parameters to the calibration. 
+As presented in section (\ref{sec:modLike}) here we represent these model and data errors as simply as possible using additive and multiplicative terms in the calibration data for NEE, Cv and Cs. This introduces six new parameters to the calibration. 
 
-Before presenting the detailed results a general theme in Fig... is that introducing the new terms has significantly increased the posterior uncertainty in the parameters which makes it more likely that the marginal posterior distribution for the parameters includes the true value. In tandem with this, Fig... shows that including these new terms has increased the uncertainty and improved the fit to data considerably (EuL, EuBL). 
+Before presenting the detailed results a general theme in Fig (\ref{fig:Par}) is that introducing the new terms has significantly increased the posterior uncertainty in the parameters which makes it more likely that the marginal posterior distribution for the parameters includes the true value. In tandem with this, Fig (\ref{fig:timeseries}) shows that including these new terms has increased the uncertainty and improved the fit to data considerably (EuL, EuBL). 
 
 ## Model with error and unbalanced perfect data with additive and multiplicative parameters to represent model error. EuL
 
-Our first test using the new Likelihood is in the calibration with a significant model error and unbalanced data. To see the influence of the new terms we compare first marginal posterior parameter distribution with those for Eu Fig... Comparing with Eu the posterior marginal distribution of LUE is now larger and includes the true value. The uncertainty in KEXT, tauV, Cs and Cv has also increased so that these distributions are now closer to the true value. An outlier is tauS where the uncertainty has decreased but the distribution is now clearly further away from the true value. As presented already the main influence of the model error is to allocate too much new carbon to the aboveground vegetation pool, since there is no allocation now to the root pool. In this calibration KEXT is lower than in Eu this reduces the carbon produced and help to counteract the effect of the error. For NEE to stay close to the data there must be a compensating drop in respiration and hence the soil turnover needs to be slower. A larger tauS helps with this and is counteracted by the distribution of modmultCs being centred at 0.9 (supplementary material) so that a higher tauS still allows for a good fit to the Cs data. 
+Our first test using the new Likelihood is in the calibration with a significant model error and unbalanced data. To see the influence of the new terms we compare first marginal posterior parameter distribution with those for Eu Fig (\ref{fig:Par}). Comparing with Eu the posterior marginal distribution of LUE is now larger and includes the true value. The uncertainty in KEXT, tauV, Cs and Cv has also increased so that these distributions are now closer to the true value. An outlier is tauS where the uncertainty has decreased but the distribution is now clearly further away from the true value. As presented already the main influence of the model error is to allocate too much new carbon to the aboveground vegetation pool, since there is no allocation now to the root pool. In this calibration KEXT is lower than in Eu this reduces the carbon produced and helps to counteract the effect of the error. For NEE to stay close to the data there must be a compensating drop in respiration and hence the soil turnover needs to be slower. A larger tauS helps with this and is counteracted by the distribution of modmultCs being centred at 0.9 (supplementary material) so that a higher tauS still allows for a good fit to the Cs data. 
 
-Looking at the output timeseries (Fig ...) the influence of the error hasn't been removed, as already noted for posterior parameter distributions, but there has been a significant improvement in the predictions with the centre of the posterior now much closer to the 'truth' line. In addition, the uncertainty has increased so that 5 of the 6 data points are now inside the posterior confidence interval. The very simple multiplicative and additive terms introduced have not removed the influence of the error suggesting that more complex terms may be beneficial. There is however, a much greater sense that the sparse Cv data are influencing the calibration. 
+Looking at the output timeseries (Fig \ref{fig:timeseries}) the influence of the error hasn't been removed, as already noted for posterior parameter distributions, but there has been a significant improvement in the predictions, versus Eu, with the centre of the posterior now much closer to the 'truth' line. In addition, the uncertainty has increased so that 5 of the 6 data points are now inside the posterior confidence interval. The very simple multiplicative and additive terms introduced have not removed the influence of the error suggesting that more complex terms may be beneficial. There is however, a much greater sense that the sparse Cv data are influencing the calibration. 
 
  
 ```{r include=FALSE}
@@ -705,11 +718,11 @@ out15 <- fitVSEM("run15.RData",iter=1200000, params=addPars)
 
 ## Perfect model and and unbalanced data with a multiplicative bias and additive and multiplicative parameters to represent the bias. PuBL
 
-This calibration introduces the Likelikehood error terms to the previous calibration (PuB) with a large data bias and unbalanced data. Looking at changes in the posterior parameter distributions versus PuB (Fig...), as noted previously for EuL, a key influence is that uncertainty is increased. 
+This calibration introduces the Likelikehood error terms to the previous calibration (PuB) with a large data bias and unbalanced data. Looking at changes in the posterior parameter distributions versus PuB (Fig \ref{fig:Par}), as noted previously for EuL, a key influence is that uncertainty is increased. 
 
-Some parameters (KEXT, LUE, tauV, Cs and Cv) are significantly closer to their true values. The centre of the tauS distribution is now considerably lower due to the modmultCs parameter slightly over compensating for the data error (supplementary material) however, the significantly larger uncertainty means that the true value is now included in the distribution. 
+Some parameters (KEXT, LUE, tauV, Cs and Cv) are significantly closer to their true values. The centre of the tauS distribution is now considerably lower due to the lower modmultCs parameter slightly over compensating for the data error (supplementary material) however, the significantly larger uncertainty means that the true value is now included in the distribution. 
 
-Similarly to  EuL the vegetative carbon timeseries is also much improved (supplementary material). This shows that the extra terms are having a similar beneficial influence on this calibration as was found in EuL. For the Cs timeseries the model prediction without the Likelihood terms (not shown) is close to the truth line as might be expected.
+Similarly to  EuL, the vegetative carbon timeseries is also much improved (supplementary material). This shows that the extra terms are having a similar beneficial influence on this calibration as was found in EuL. For the Cs timeseries the model prediction without the Likelihood terms (not shown) is close to the truth line as might be expected.
 
 ```{r include=FALSE}
 obs[,3] <- obs[,3] * 0.8
@@ -765,13 +778,13 @@ obs <- obs.orig
 
 ```
 
-## Model with error and and unbalanced data with a multiplicative bias and additive and multiplicative parameters to represent model error and the data bias. EuBL
+## Model with error and unbalanced data with a multiplicative bias and additive and multiplicative parameters to represent model error and the data bias. EuBL
 
-In this final calibration we combine the influence of the model error, the data bias and the unbalanced data now with the new terms in the likelihood representing additive and multiplicative error. 
+In this final calibration, we combine the influence of the model error, the data bias and the unbalanced data now with the new terms in the Likelihood representing additive and multiplicative errors. 
 
-We compare against the posterior parameter distributions for the calibration EuB. Similarly to the previous calibrations (EuL and PuBL) the uncertainty has increased significantly for a number of parameters (KEXT, LUE tauV, Cs and Cv) parameter distributions so that in general they are now closer to parameter's 'true' value. The tauS distribution has changed in a similar way to PuBL as discussed above. 
+We compare against the posterior parameter distributions for the calibration EuB (Fig \ref{fig:Par}). Similarly to the previous calibrations (EuL and PuBL) the uncertainty has increased significantly for a number of parameters (KEXT, LUE tauV, Cs and Cv) parameter distributions so that in general they are now closer to parameter's 'true' value. The tauS distribution has changed in a similar way to PuBL as discussed above. 
 
-The timeseries predictions including the new Likelihood terms are a clear improvement over EuB (Fig ... and supplementary material) the uncertainty has increased and the posterior predictions have a much better fit to the data especially for Cv. As for PuBL the Cs timeseries the model prediction without the Likelihood terms (not shown) is close to the truth line as might be expected.
+The timeseries predictions including the new Likelihood terms are a clear improvement over EuB (Fig \ref{fig:timeseries} and supplementary material) the uncertainty has increased and the posterior predictions have a much better fit to the data especially for Cv. As for PuBL the Cs timeseries the model prediction without the Likelihood terms (not shown) is close to the truth line as might be expected.
 
 
 ```{r include=FALSE}
@@ -818,51 +831,6 @@ prior         <- createUniformPrior(lower = addPars$lower[parSel], upper = addPa
 
 out18 <- fitVSEM("run18.RData",iter=1200000, params=addPars)
 
-#pdf('par18.pdf')
-#plot(out18)
-#dev.off()
-
-#pdf('out18.pdf')
-#plotOutputsEsys2(out18,addPars)
-#dev.off()
-
-
-## addPars                   <- refPars
-## addPars[nvar+1,]          <- c(1.0, 0.1, 3.0)
-## addPars[nvar+2,]          <- c(1.0, 0.1, 3.0)
-## addPars[nvar+3,]          <- c(0.0, -0.01, 0.01)
-## addPars[nvar+4,]          <- c(0.0, -1.0, 1.0)
-## rownames(addPars)[nvar+1]   <- "modmultNEE"
-## rownames(addPars)[nvar+2]   <- "modmultCs"
-## rownames(addPars)[nvar+3]   <- "modaddNEE"
-## rownames(addPars)[nvar+4]   <- "modaddCs"
-## newPars <- addPars$best
-## names(newPars) = row.names(addPars)
-## newPars["Av"]  <- 1.0
-## newPars["Cr"]  <- 0.0
-## parSel = c(defParms, nvar,nvar+1,nvar+2,nvar+3,nvar+4)
-## npar <- length(parSel)
-## obsSel <- c(1,202,390,550,750,920)*2
-## isLow = 2
-## likelihood <- function(x, sum = TRUE){
-##   x         <- createMixWithDefaultsOld(x, newPars, parSel)
-##   predicted <- VSEM(x[1:(nvar-1)], PAR)
-
-##   diff       <- c((predicted[,1]*x[nvar+1] + x[nvar+3]) - obs[,1])
-##   llValues1  <- dnorm(diff, sd = pmax((abs(c(predicted[,1])) + 0.0000001) * x[nvar],0.0005), log = T)
-##   diff       <- c(predicted[obsSel,2] - obs[obsSel,2])
-##   llValues2  <- dnorm(diff, sd = (abs(c(predicted[obsSel,2])) + 0.0000001) * x[nvar], log = T)
-##   diff       <- c(((predicted[1,3] + (predicted[,3] - predicted[1,3])*x[nvar+2]) + x[nvar+4]) - obs[,3])
-##   llValues3  <- dnorm(diff, sd = (abs(c(predicted[,3])) + 0.0000001) * x[nvar], log = T)
-
-##   ## if (sum == FALSE) return(llValues)
-##   ## else return(sum(llValues1,llValues2,llValues3))
-##   return(sum(llValues1,llValues2,llValues3))
-## }
-
-## prior         <- createUniformPrior(lower = addPars$lower[parSel], upper = addPars$upper[parSel])
-
-## out18 <- fitVSEM("run18.RData",iter=1200000,params=addPars)
 ```
 
 # Discussion
@@ -887,6 +855,7 @@ For the reasons given above, in the final section of this study we included very
 
 (Include refs/discussion on more complex model discrepancy approaches eg GP, Oberpriller paper?) 
 
+
 # Supplementary material
 
 ```{r include=FALSE}
@@ -901,7 +870,7 @@ rm(obsSel)
 plotParameters(out1,refPars)
 ```
 
-```{r echo=FALSE, background='white', fig.height=7, fig.cap="\\label{fig:perModbalDataOut}Perfect model, balanced data (NEE, Cv, Cs: 2048 obs). Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
+```{r echo=FALSE, background='white', fig.height=7, fig.cap="Perfect model, balanced data (NEE, Cv, Cs: 2048 obs). Observations included in the calibration marked with a '+'. Red line 50% quantile posterior distribution. Green line is the 'true' model output. Dark brown shading 2.5% 97.5% quantile posterior distribution. Light brown shading 2.5% 97.5% predictive interval."}
 plotOutputs(out1,refPars)
 ```
 
