@@ -7,6 +7,5 @@ TG15-VSEM_cache
 *.html
 *.bat
 *.RData
-*.R
 *#
 .Rproj.user
