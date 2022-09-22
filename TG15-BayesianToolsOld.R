@@ -1,3 +1,7 @@
+##
+## These are functions from an older version of BayesianTools that are required 
+## in this study.
+
 createMixWithDefaultsOld <- function (pars, defaults, locations) 
 {
     out = defaults
