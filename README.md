@@ -1,6 +1,6 @@
 # Description
 
-This repository contains the R code needed to create the calibrations and figures for the for Methods and Evolution publication "Issues in calibrating models with multiple unbalanced constraints: significance of systematic model and data errors" (2022) D.R. Cameron, F Hartig, F. Minunno, J Oberriller, B. Reineking, M. Van Oijen and M. Dietze 
+This repository contains the R code needed to create the calibrations and figures for the for Methods and Evolution publication "Issues in calibrating models with multiple unbalanced constraints: significance of systematic model and data errors" (2022) D.R. Cameron, F Hartig, F. Minunno, J Oberpriller, B. Reineking, M. Van Oijen and M. Dietze 
 
 ## R script to create figures in the main manuscript 
 TG15-main.R 
